@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-08-30T16:51:12+10:00
+
+====== OSMR ======
+Created Friday 30 August 2019
+
+Most of what is needed is covered in the readme. By default the profile avoids construction tagged segments which editors may leave on newly opened roads. Routing errors may be due to this

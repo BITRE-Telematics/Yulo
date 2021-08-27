@@ -1,0 +1,17 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-04-27T13:03:49+10:00
+
+====== Yulo ======
+Created Friday 27 April 2018
+
+I am tentatively naming the processing framework (as an adaptable component built for the larger [[FPMP|Freight Performance and Measurement Project]]) "Yulo". Yulo is the [[http://hri.newcastle.edu.au/AwabakalEnglish/Awabakal1834.html|Awabakal word for foot.]] This reflects both the debt owed to the [[Processing:Barefoot|Barefoot]] repository and the [[http://hri.newcastle.edu.au/AwabakalEnglish/Awabakal1834.html|pre-European elements]] of the Australian road network including Watt St in Newcastle in Awabakal country.
+
+Yulo as a framework consists of the following elements
+
+Homogenisation of raw data including [[Raw data and perparation:Data read in|read in]] and adjustments of [[Raw data and perparation:Timezones|timezones]].
+[[Processing:Tripgrouping|Grouping GPS observations into trips and stops]] using a clustering mechanism.
+Identifying [[Processing:SummaryStops|anonymous stop clusters]].
+Matching GPS coordinates to the road network and imputing the use of other roads using a modified version of [[Processing:Barefoot|Barefoot]].
+[[Processing:postbarefoot|Extracing data from barefoot JSON]] and imputing other data
+A database structure for [[Storage of processed data|storing processed data]] and [[Display and queries:Queries|querying it]]

@@ -1,0 +1,36 @@
+These are binaries from a mildly edited version of OSRM https://github.com/Project-OSRM/osrm-backend
+The only change from the github version is the file car.lua which has been altered to return an osm_id instead of the road name.
+
+USAGE
+
+Extract a osm.pbf
+
+./osrm-extract -p ./car.lua ../path/to/osmfile.osm.pbf
+
+this will create an .osrm in the same directory as the osm.pbf
+
+./osrm-routed ../path/to/osrmfile..osrm
+
+The default port is 5000 but can be changed with a flag to osrm-routed
+
+requests are made in the form "http://127.0.0.1:5000/route/v1/driving/{LAT1},{LAT2},{LAT3},{LAT4}?steps=true"
+
+
+
+
+##FUTURE NOTE##
+
+If these binaries don't work you can always create a Dockerfile along the lines of
+
+	FROM osrm/osrm-backend
+	RUN sed -i 's/handlers = Sequence /result.name = way:id()\nhandlers = Sequence /g' profiles/
+
+Using the premade image, then 
+
+
+	sudo docker build -t osrm-server ./
+
+
+	sudo docker run --rm -t -v ${PWD}/../barefoot/map/osm/:/data osrm-server osrm-extract -p /opt/car.lua /data/australia.osm.pbf
+	sudo docker run --rm -t -v ${PWD}/../barefoot/map/osm/:/data osrm-server osrm-contract /data/australia.osrm
+	sudo docker run -t -i -p 5000:5000 -v ${PWD}/../barefoot/map/osm/:/data osrm-server osrm-routed /data/australia.osrm --name="osrm-server"

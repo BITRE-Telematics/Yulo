@@ -1,0 +1,7 @@
+--- # options for passing to batch_mod.py
+  host : localhost
+  port: 1234
+  format: debug
+  input: ../JSONInput
+  output: ../JSONOutput
+  n_cores: 16

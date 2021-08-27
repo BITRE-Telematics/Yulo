@@ -1,0 +1,17 @@
+{
+  "tags":
+    [
+      {
+        "tag":"osm_id","id":1,"values":
+          [
+          
+            {
+              "name":"",
+              "id":"",
+              "priority":1.9,
+              "maxspeed":80
+            }
+          ]
+      }
+    ]
+}

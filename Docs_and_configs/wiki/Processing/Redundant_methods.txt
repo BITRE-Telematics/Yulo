@@ -1,0 +1,51 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-04-27T12:06:36+10:00
+
+====== Redundant methods ======
+Created Friday 27 April 2018
+
+This is text document methods no longer used but kept in case it provides some insight
+
+
+Summary scripts
+These three scripts, which can be altered as needed based on feedback, provide a base for summaries that relate to the three main desired outputs. They must be run in order as SummaryTrips requires inputs from the other two. Of these only Summary Stops is still current as the data is now processed in the database.
+
+
+
+SummaryRoads.r
+This script takes the output from Postbarefootmerge.r and provides a function to aggregate it by road, including unique vehicle, trip and firm numbers (although it doesn’t yet account for multiple traversals in one trip) and summaries on speed, which can be used to calculate interquartile ranges etc. When matched with speed limit info, if available, similar statistics to the US approach can be derived here.
+The function can be applied by time period as desired.
+The script currently does a rough correction on timezones but this should not be trusted at all. In addition, as of 2017-06-26, subperiod code returns a memory mapping error on the server but not on the desktop, for reasons that escape me. UPDATE: It was catching on Nas in the datetime, although the origin of said Nas is also confusing (around 60k out of around 27 million)
+This function also provides input to SummaryTrips.r and must be run first.
+Note the function wday() returns weekday numbers starting at one for SUNDAY, not Monday as is the ISO standard.
+In some instances the vehicle will be matched to the nearest road when it is not using a road recorded in the OSM data. This happens frequently when the vehicle is moving in an industrial site, or is using a rest area or service station that is not defined separately in the road data. Because vehicles naturally move very slowly in these areas this means that segments can get erroneously low average speeds.
+When these streets are in an industrial area they will likely be filtered out and the problem is immaterial.
+When they are due to rest areas or service stations we may need to rely on the common sense of the user.
+Other examples are trickier. For instance 399208199 is an on ramp to the M5 south of Bankstown immediately adjacent to an industrial site. As such observations in the site are attributed to the road segment and it has a median speed of near zero. The adjacent segments have median speeds between 50 and 80. Filtering out these erroneous matches is difficult without producing errors elsewhere, so we may need to rely on the common sense of users here as well.
+In some edge cases the speed estimates are a bit iffy because the segment includes multiple speed zones, for instance the 50 kph portion of the Newell Highway in Boggabilla consists of two segments, both of which include long portions of the 100 kph portions to the North and South of town.
+
+
+
+SummaryStops.r
+This script determines clusters of stops defined by Tripgrouping.py to compare to defined truck stop locations. It uses the DBSCAN method to derive the clusters as, unlike other methods, including k-means, it does not require a pre-specified number of clusters. By default the dbscan::dbscan() function can take n variables and compute a Euclidean distance, but it can also accept a dist object created from a matrix. As such the script computes a matrix of n^2 great circle distances to pass to dbscan, where n is the number of stops. This is obviously computationally intensive but when run in parallel should not take long.
+This dbscan() function also requires an epsilon parameter (eps) representing the reachability distance. This will need to be felt out based on results desired. For instance, an eps of 400 (metres) had the effect of combining what on examination where stops at two difference locations in Laverton North. Two firms were visiting a single building on one side of the road, and one firm was visiting a building to the North a short distance away. However dbscan could not distinguish them. This is probably immaterial for the purposes of examining truck stops unless we want to determine, for instance, if trucks are parking adjacent to a truck stop instead of in it because it is full at certain times or they are using it in an unintended fashion, for instance parking on the opposite side of the road.
+The script can also return summary information about stop duration and the most popular times a stop at a cluster begins. Summary information can be run over subperiods if desired.
+Looking at the road data it is clear that some truck stops are being used, but no stops are being recorded at these locations. An example is Bungaree in Victoria where 56 trips have been matched to the rest area road, but no stops have been recorded. Some of these trips are potentially mis matches from the road matching algorithm, but others are likely to be rests that lasted shorter than an hour (probably toilet breaks). 
+
+We may need to have another definition of stops for the purpose of truck stop analysis, or request a list of sites of interest from the user. This is particularly true if the stop duration is low and there is no distinct road in the data, for instance the unpaved area NW of Lithgow where Black_153-69 takes place at the intersection of the GW and Castlereagh highways.
+
+Alternatively users can simply examine the road data, although this will give no indication of duration.
+
+SummaryTrips.r
+This script identifies the SA2 of any given trip observation (from which GCC, SA3, SA4 and STE can al be derived) and provides summary functions showing the start and end SA2s and datetimes for each trip, from which a trip matrix can be constructed. The SA2s are calculated for all points for the purposes of other analysis (associative rules etc). This increases computational intensity, but only mildly.
+These functions can be applied by desired subperiods etc.
+The Trip data is read directly from Trips produced by Trip grouping, but is merged with a subtrip length measure produced by SummaryRoads. The length estimates distance travelled between points, however it will always be below true length travelled. This is because of points where barefoot has been unable to find a route, and because the creation of subtrips assume a missing period of travel between them. It may still provide a useful index however if the propensity for gaps is similar over time.
+The script also amalgamates trips into tours where the intervening periods are greater than a certain threshold, currently 4 hours. Because this is necessarily a loop it has been implemented in RCPP.
+I have also added a merge with stops information from SummaryStops.r. Because TripGrouping.py now adds the last point of the previous stop and the first point of the next stop, this can be merged with the centroids of the stops by identifying them by vehicle and datetime. This could have been done in TripGrouping.py but would have mangled the code considerably and likely produced problems with the 2nd pass algorithm or barefoot where a vehicle starts pinging at some distance from the previous stop.
+
+
+Strangely this minor addition also started to produce memory errors in later code that was previously working, and would work again when the stop merging was hashed out. This must be due to poor garbage collection and has been addressed by clearing the workspace, reading in data again and using foreach instead of parLapply.
+
+There were a large number of Nas in this (and in the subsequent script) because R defaults to na.rm = F for mean() and sum(). This is now, hopefully, fixed.
+I should replace mean() with median().

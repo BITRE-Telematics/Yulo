@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-08-08T16:52:24+10:00
+
+====== Go interfaces ======
+Created Wednesday 08 August 2018
+
+Neoism

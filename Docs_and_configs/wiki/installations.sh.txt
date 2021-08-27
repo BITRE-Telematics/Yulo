@@ -1,0 +1,7 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-05-09T11:55:26+10:00
+
+====== installations.sh ======
+Created Wednesday 09 May 2018
+bashscripting/installations.sh is an untested bash script that aims to install the requirements for the process on a new ubuntu machine and configure them. [[Storage of processed data:neo4j|neo4j.conf]] should be edited prior to running.

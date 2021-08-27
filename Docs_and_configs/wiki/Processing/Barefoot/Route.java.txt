@@ -1,0 +1,10 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-05-01T16:12:50+10:00
+
+====== Route.java ======
+Created Tuesday 01 May 2018
+
+This class at src/main/java/com/bmwcarit/barefoot/matcher/Route.java has been altered to return lengths of imputed routes, used to help calculate imputed speeds.
+
+https://github.com/bmwcarit/barefoot/issues/35

@@ -1,0 +1,9 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-08-09T09:39:15+10:00
+
+====== Geofabrik ======
+Created Thursday 09 August 2018
+
+Geofabrik provides daily updates of osm data in an extracted form. [[process.sh]] downloads the latest for Australia.
+

@@ -1,0 +1,22 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-05-01T16:11:30+10:00
+
+====== MatcherKState.java ======
+Created Tuesday 01 May 2018
+
+This class at src/main/java/com/bmwcarit/barefoot/matcher/MatcherKState.java has been altered to return the segments that have been traversed based on the following.
+
+https://github.com/bmwcarit/barefoot/issues/18
+
+
+I have also altered it to change the structure of the JSON file it has returned to speed up [[Processing:postbarefoot|postbarefoot.]] I haven't succeeeded in entirely flattening the JSON object but this shouldn't be too hard in future, though the gains are likely slight.
+It also returns much of the imputed information. 
+Note this is also where barefoot transforms timestamps from miliseconds into seconds, after requiring input in milliseconds.
+
+I have changed it to return the osm_id instead of the gid by creating referencing funtions in the classes it inherits in roadmap/Road.java and road/Baseroad.java
+I have also added the class SpatialOperator from Geography which allows me to return imputed azimuths along with other data on [[Processing:Barefoot:directionality|directionality]].
+
+I have also changed it to exclude transitions of length 0. This means there will be NO imputed speeds of zero. This may be a fateful decision and I have buried it here rather than relying on queries to exclude them.
+
+In addition where I unpack the roads list for matched routes, I start the loop at index 1. This deliberately excludes the first segment which is the matched segment for the previous observation, thus avoiding duplicates

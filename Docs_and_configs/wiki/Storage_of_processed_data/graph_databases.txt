@@ -1,0 +1,12 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-04-27T11:54:51+10:00
+
+====== graph databases ======
+Created Friday 27 April 2018
+
+I have chosen to store data as a graph database, where each node is a segment, a trip or a stop, and edges include things like “observed at <datetime> at <speed>”. A simple schematic is below. T
+There are a number of graph frameworks available with open source licences of carrying permissions, including neo4j and orientdb. Rando internet comments seem to indicate that [[neo4j]], whilst requiring payment for commercial uses, is better for heavy read applications, which is what our crucial point will be. Speed is less crucial for write tasks which will be batched anyway. [[Orientdb]] does not require payment, but is more poorly documented and less efficient. Neo4j is the current choice because of its better bulk upload facilities
+
+
+{{~/Documents/graph.png}}

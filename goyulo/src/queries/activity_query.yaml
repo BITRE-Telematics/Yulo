@@ -1,0 +1,5 @@
+--- # parameters for go query
+  start: 0
+  finish: 2583228800
+  speedsfile: "../../Graphupload/precompute_segs/segvols.csv"
+  min_vol: 60

@@ -1,0 +1,13 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-04-27T11:19:10+10:00
+
+====== Improper map construction ======
+Created Friday 27 April 2018
+
+
+We might have to consider removing service roads from the dataset (using roadtypes.json). This is becoming apparent for the road segment osm_id 369220787 which is a service road to access a pipeline that runs next to a busy warehouse in Sydney’s West. Trucks moving away from the warehouse are matched to this closed service road rather than driveways which are not in the map data, and this can be misleading. 
+
+Alternatively they can be filtered out afterwards. Access is described in another tag, and service roads are almost entirely matched near depot locations where outputs will likely obfuscate detail anyway, so discarding validly matched service roads won’t cause many problems.
+
+Lastly the import scripts could be rejigged to exclude no access service roads, but this is likely more complex than it seems. The best bet seems to be adapting the function is_oneway() (lines 122:130) in bfmap.py to a is_no_access(), and inserting in the function segment() (line 174-220 at around 185) to weed out no access roads. UPDATE - This has been implemented successfully, as has another function to eliminate service roads tagged "parking aisle".

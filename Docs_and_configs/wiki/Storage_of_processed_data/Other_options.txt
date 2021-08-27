@@ -1,0 +1,32 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-04-27T12:05:30+10:00
+
+====== Other options ======
+Created Friday 27 April 2018
+
+This documents foregone options
+
+Intermediate formats
+The process involves writing the data to and from json. Whilst this is time consuming, there is no good reason to retain these formats.
+
+Intermediate outputs
+Stops
+Stops produce a simple flat table with one stop per line, and, potentially, a cluster id for a given period. Whilst publication would be restricted to major stop locations all stops are easily recorded
+Trip and roads
+Trips are recorded as a flat table with one GPS point per line with a field recording trips and sub trips. This is required for input for road matching but can be used to produce trip summary and activity data as is and can be stored as such. Potentially this can be cross indexed with the homogenised data by vehicle ID and timestamp.
+Road matching 
+Road matching produces a deeply nested json object which associates GPS points with a variety of attributes including matched GPS points with trip ID, a road ID, road IDs linking a point and the previous point and the estimated distance travelled amongst others. Currently this is unpacked into a flat table where each line is a road ID with a vehicle and the time stamp of the GPS point it is at or leads up to. Where there is an actual GPS point it is also recorded, and an average speed is imputed over series of road ids between points. The full set of corrected GPS points can be added to this if desired.
+This data can be stored as one table with the trip data to save space but I think we can avoid this.
+Vehicle data
+In the above data each observation has a unique vehicle id which we hope will be constant over time from the providers and which will be obfuscated when the data is sent to the server. Because these ids will be stable I think we can have a table which associates characteristics of each vehicle to the extent these are immutable (ie prime mover vs rigid truck etc., age) so data on trips and roads can be sliced by these characteristics as desired. This also means the table can be updated as we get more information about these vehicles over time and then do subanalysis of previous periods.
+
+Non relational databases
+Because of the form the data comes in, structured tabular formats are a given for the raw inputs. However there may be some scope for non relational formats (for instance NoSQL) as a way of storing intermediate outputs. This would make some flexibility in later analysis and may be scalable in a way that initial processing is not. For instance a GPS observation only requires other observations in that trip to be processed, but later analysis of road segments may wish for all observations of that road segment to compute up to data averages for any number of subslices over time or journey. This will also allow new data to be included arbitrarily, for instance consignment information if it becomes unexpectedly available, without wasting storage space or requiring downtime.
+Where a relational database would require several tables for trips, stops and segment observations, a nonrelational form could have a series of key values where keys can be segments, trips or segments, and values can refer to other keys. For instance
+segmentID:observation:tripid = Trip:VehicleID:234
+segmentID:observation:time = 123445145823
+segmentID:observation:impSpeed = 66
+Trip:VehicleID:234:startTime = 14562452467
+Trip:VehicleID:234:Startlocation = Stop:VehicleID:423
+Stop:Vehicle:ID423:Location = -31.2342, 121.234 

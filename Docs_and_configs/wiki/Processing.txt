@@ -1,0 +1,25 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-02-01T16:02:58+11:00
+
+====== Processing ======
+Created Friday 01 February 2019
+
+These scripts and processes form the basic processing.
+
+For a given vehicle it must go through
+
+[[./Tripgrouping.txt|TripGrouping]] - Where trips and stops will be defined and JSON produced for mapmatching
+
+[[./Barefoot.txt|Barefoot]] - matching observations to roads and intuiting further data
+
+[[./postbarefoot.txt|Postbarefoot]] - merging matched data and geocoding overvations and stops for uploading
+
+[[../Storage_of_processed_data/neo4j/uploadscripts|Graphuploading]] - Adding observations and stops to the database
+
+
+In addition the following scripts must be run periodically
+
+[[+stopclustering]] - defining stops that are clustered spatially and temporally that identify important locations and those that are anonymous
+
+[[../Storage_of_processed_data/neo4j/uploadscripts|addvehicledata]] and addsegments - incorporating data on vehicles and segments into the database

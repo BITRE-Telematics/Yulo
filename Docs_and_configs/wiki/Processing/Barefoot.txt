@@ -1,0 +1,65 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-04-27T10:43:20+10:00
+
+====== Barefoot ======
+Created Friday 27 April 2018
+
+Barefoot
+
+Barefoot is used to match GPS points to a road network using a hidden markov process. An initial point is matched to the most likely prospect on a road network and subsequent points are match based on probability taking into account the likely route from the previous point and proximity to road segments. Compared to nearest line matching, the hidden Markov approach is more computationally intensive, but more accurate. It is also capable of returning all segments the vehicle likely traversed, rather than just the subsample it was on when the GPS pinged. This both provides more data, but addresses a bias whereby slower vehicles are likely to ping on a given segment.
+Barefoot is designed to use OpenStreetMap (OSM) data, which means we can report road information using Ids used by a publicly available data set.
+Barefoot appears to expect a relatively high frequency of pings, up to one a second, whereas the most common value in the provided data is 60 seconds. This means the server will often report “No state transition” because the vehicle has moved too far for the algorithm to find prospects in a speedy fashion. This is still a minority of points however and increasing the search distance will increase computation time incommensurate with any increased accuracy.
+Barefoot is written in Java with Python and Scala interfaces, and uses Docker as a container for the map data. The Barefoot server interfaces with the Docker container, and data is fed to it using a Python script. The process is not dissimilar to the quick start guide for a matcher server described here with some differences. These are:
+I have altered the Java source code to return route length between matched points and the ids of segments traversed in [[Barefoot:MatcherKState.java|MatcherKState]] and [[Barefoot:Route.java|Route]].
+The docker container is now called barefoot-australia and uses Australian map data. This also required the editing of “[[Barefoot:import.sh|import.sh]]” before creating the container to make sure map data was imported correctly.
+
+{{{code: lang="sh" linenumbers="True"
+curl http://download.geofabrik.de/australia-oceania/australia-latest.osm.pbf-o barefoot/map/osm/australia.osm.pbf
+}}}
+
+
+By default psql uses the port 5432, and will block any Docker container using that port. The Docker port number can be changed, but it will need to be changed in all configuration files. If one wants to use psql on the map data they can do it inside the container and avoid installing psql on the host system.
+The map data goes into australia.bfmap in the top directory of the barefoot folder. This needs to be deleted when new map data is imported into docker.
+When building the JAR -DskipTests must be used else there is an error. No consequences to using -DskipTests have been discovered.
+Note that the server needs to be run in a different console instance to the batch.py command unless executed with &
+
+
+
+I am working on including a script to regularly purge and reimport map data to account for changes in the road network, for instance the completion of bypasses. UPDATE – This is now part of process.sh.
+
+The following files are changed
+
+[[Barefoot:import.sh|import.sh]]
+[[Barefoot:batch_mod.py|batch_mod.py]] is an altered version of the batch addition script
+barefoot.yaml is an addition
+[[Barefoot:bfmap.py|map/osm/tools/bfmap.py]]
+map/osm/tools/road-types.json
+[[Processing:Barefoot:probbo-roads.json|map/osm/tools/probbo-roads.json]]
+config/australia.properties is an addition
+[[Barefoot:server.properties|config/server.properties]]
+[[Barefoot:MatcherKState.java|src/main/java/com/bmwcarit/barefoot/matcher/MatcherKState.java]]
+[[Barefoot:Route.java|src/main/java/com/bmwcarit/barefoot/roadmap/Route.java]]
+src/main/java/com/bmwcarit/barefoot/road/PostGISReader.java
+src/main/java/com/bmwcarit/barefoot/road/BaseReader.java
+[[Processing:Barefoot:Dockerfile|Dockerfile]]
+
+The server needs to be run in --debug mode to get the modified JSON output that returns roads (including SA2/GCC codes) and [[Processing:Barefoot:directionality|directionality]].
+
+Although Barefoot uses parallel processing by default, my  script feeds each vehicle sequentially. This can create a bottleneck regardless of the number of cores when a single core is stuck matching a single point. This will stop the entire process until that point is resolved, or the process times out. There are several potential ways to deal with this.
+	Reduce the timeout threshold, and sacrifice some data.
+	Run several instances of the bash script with difference vehicles, so processing continues 	whilst the bottleneck is in place.
+	Use Barefoot’s Spark capabilities to distribute processing. This requires learning Scala and is poorly documented.
+
+UPDATE – The problem is fixed by feeding trips/subtrips individually instead of vehicles. It turns out that the id variable in the input JSON is not used at all by the offline matching server, which treats each input file as a discreet vehicle. The algorithm was stalling when there were large jumps between points (such as those that separate subtrips in my algorithm) because the algorithm was searching every possible route to get between the points. Even though there is a maximum seach distance, if the vehicle was in an urban area there are a very large number of potential routes to exhaust. I suggested a switch the the Barefoot authors which would automatically abandon the search if the crows fly distance between points was greater than the maximum search distance, as this would logically exclude all land routes, and they have agreed to include this.
+
+The files are fed to barefoot using the [[Barefoot:batch_mod.py|batch_mod.py]]. This is merely a modified version of the default batch.py that iterates though the directory, and draws configuration options from barefoot.yaml. It has also been updated to python3 syntax and must be run as such. It also feeds files in tandem. This is quicker, but why is beyond me given the JVM already uses all cores.
+If we scale enough that we start use multiple virtual machines the scala interface can be used to distribute in place of python
+
+In future batch_mod can also be adjusted to collate the JSONOutput/ by vehicles to reduce read/write time in this script and the following script
+
+When the timeout is triggered a temporary batch files gets left in the working directory.
+The bash script saves the output of each vehicle (by default printed to the console) to JSONOutput.
+
+
+After closing the barefoot server use fuser -k 1234/tcp to purge the port so it can be used again, unless one wants it running indefinitely.

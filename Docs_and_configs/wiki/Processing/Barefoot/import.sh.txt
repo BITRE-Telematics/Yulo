@@ -1,0 +1,10 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-05-01T16:29:00+10:00
+
+====== import.sh ======
+Created Tuesday 01 May 2018
+
+import.sh is a bash script to build the psql database. It has been altered to change arguments referring to the right map file and config. It has a new argument referring to [[Barefoot:probbo-roads.json|probbo-roads.json]]
+It also has been altered to refer directly to the location of the osmosis executable since it was not excuting properly as part of [[process.sh.]]
+The osmosis commands have also been altered to accept ways with route=ferry, whereas previously only ways with a highway tag were accepted

@@ -1,0 +1,214 @@
+{
+  "tags":
+    [
+      {
+        "tag":"osm_id","id":1,"values":
+          [
+            {
+              "name":"124466430",
+              "id":"Waverly Road",
+              "priority":1.5,
+              "maxspeed":60
+            },
+            {
+              "name":"16889961",
+              "id":"Waverly Road",
+              "priority":1.5,
+              "maxspeed":60
+            },
+            {
+              "name":"404804624",
+              "id":"Huntingdale Road OffRamp",
+              "priority":3,
+              "maxspeed":80
+            },
+            {
+              "name":"29478440",
+              "id":"Huntingdale Road OffRamp",
+              "priority":3,
+              "maxspeed":80
+            },
+            {
+              "name":"29479336",
+              "id":"Warrigal Road OffRamp",
+              "priority":3,
+              "maxspeed":80
+            },
+            {
+              "name":"568372476",
+              "id":"Waverly Road",
+              "priority":1.9,
+              "maxspeed":80
+            },
+            {
+              "name":"30637736",
+              "id":"Malvern Road",
+              "priority":1.9,
+              "maxspeed":80
+            },
+            {
+              "name":"14144084",
+              "id":"Devil's Elbow",
+              "priority":1.9,
+              "maxspeed":80
+            },
+            {
+              "name":"10046627",
+              "id":"Devil's Elbow",
+              "priority":1.9,
+              "maxspeed":80
+            },
+            {
+              "name":"263424015",
+              "id":"Devil's Elbow",
+              "priority":1.9,
+              "maxspeed":80
+            },
+            {
+              "name":"10046629",
+              "id":"Measday's Interchange off ramp",
+              "priority":3,
+              "maxspeed":80
+            },
+            {
+              "name":"29694496",
+              "id":"Hillcrest Avenue",
+              "priority":1.9,
+              "maxspeed":60
+            },
+            {
+              "name":"292264186",
+              "id":"Hillcrest Avenue",
+              "priority":1.9,
+              "maxspeed":60
+            },
+            {
+              "name":"165508150",
+              "id":"Crafters Interchange off ramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"332508226",
+              "id":"Old Pacific Hwy",
+              "priority":1.9,
+              "maxspeed":60
+            },
+            {
+              "name":"168990566",
+              "id":"Old Pacific Hwy",
+              "priority":1.9,
+              "maxspeed":60
+            },
+            {
+              "name":"171583040",
+              "id":"Old Pacific Hwy",
+              "priority":1.9,
+              "maxspeed":60
+            },
+            {
+              "name":"168990561",
+              "id":"Old Pacific Hwy",
+              "priority":1.9,
+              "maxspeed":60
+            },
+            {
+              "name":"4294721",
+              "id":"Old Pacific Hwy off ramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"4336316",
+              "id":"Old Pacific Hwy off ramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"4336152",
+              "id":"Old Pacific Hwy off ramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"168990570",
+              "id":"Old Pacific Hwy off ramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"4336109",
+              "id":"Old Pacific Hwy off ramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"172739946",
+              "id":"Berowra offramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"172740169",
+              "id":"Berowra offramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"8063080",
+              "id":"Berowra offramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"4385568",
+              "id":"Bicentennial Drive",
+              "priority":2.5,
+              "maxspeed":60
+            },
+            {
+              "name":"164594488",
+              "id":"Coleman st offramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"172481674",
+              "id":"Coleman st",
+              "priority":1.9,
+              "maxspeed":60
+            },
+            {
+              "name":"5219051",
+              "id":"Cumberland Hwy offramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"5219036",
+              "id":"Cumberland Hwy offramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"5219036",
+              "id":"Burnett St Offramp",
+              "priority":3,
+              "maxspeed":60
+            },
+            {
+              "name":"333529455",
+              "id":"Burnett St",
+              "priority":1.9,
+              "maxspeed":60
+            },
+            {
+              "name":"",
+              "id":"",
+              "priority":1.9,
+              "maxspeed":80
+            }
+          ]
+      }
+    ]
+}

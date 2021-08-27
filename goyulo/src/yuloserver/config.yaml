@@ -1,0 +1,36 @@
+# global vars
+  max_routines: 48
+  yuloport: 6969
+# resource limits - if used instead of max_routines
+  max_cpu : 0.9
+  max_memory: 0.9
+# configuration for Trip grouping
+  stopDuration: 900
+  stopDistance: 100
+  stopCollateDuration: 600
+  maxSpeed: 200
+  maxTime: 900
+  timeThresh: 1
+  distThresh: 10
+  maxDist: 15000
+  skipDupes: False
+  maxResidsGap: 86400
+  maxStopGap: 86400
+  residualDir: ../../../data/Residuals/
+# options for passing to barefoot
+  host : 127.0.0.1
+  port: 1234
+  format: debug
+# configuration for postbarefoot
+  STE: ../../../shapefiles/STE_wkt.csv
+  SA2: ../../../shapefiles/SA2_wkt.csv
+  db: bolt://141.120.98.192:11011
+  router_port: 5000
+# configuration for file transfer
+  file_transfer_server: "http://141.120.98.192:1337/upload"
+# credentials file
+  creds: creds.yaml
+  error_log: error_log.txt
+# address and stop matching - change boolean if no locs in database
+  match_locs: True
+  max_loc_dist: 200

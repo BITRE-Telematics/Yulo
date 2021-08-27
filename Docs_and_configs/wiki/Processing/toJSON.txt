@@ -1,0 +1,12 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-04-27T10:42:40+10:00
+
+====== toJSON ======
+Created Friday 27 April 2018
+
+This script is now redundant, which it's important features built into [[../Tripgrouping.txt|TripGrouping]]
+
+This script prepares the trip GPS points for input to [[Processing:Barefoot]] by creating a JSON format, including GPS in WKT format and azimuth where available. These are saved in the directory “JSONInput”.
+Notably it also turns the datetime into milliseconds as used by Barefoot.
+It also has a command line argument -r --[[Processing:reruns|rerun]] to indicate whether it should only process those trips which [[Matching issues and errors:GPS error|have been previously matched to problematic off ramps with associated routing errors.]] This will recreate the JSON with the problematic observation removed. 

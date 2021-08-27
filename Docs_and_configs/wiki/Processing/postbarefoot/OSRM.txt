@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-25T13:23:24+11:00
+
+====== OSRM ======
+Created Friday 25 October 2019
+
+Postbarefoot now generates length estimates for new subtrips by querying a locally hosted OSRM server which will calculate the likely route length.

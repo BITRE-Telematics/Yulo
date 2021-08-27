@@ -1,0 +1,50 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2018-04-27T11:57:21+10:00
+
+====== neo4j ======
+Created Friday 27 April 2018
+
+The configuration needs to be edited to allow it to upload CSVs from directories other than the default import directory. The config also lets the database be stored elsewhere.
+
+/etc/neo4j/neo4j.conf needs to be edited at lines 12, 23 and 29 to allow storage of data in the appropriate drives and allow csv upload. I have included a copy in Docs_and_configs/ to edit so one doesn’t have to use vi in the /etc/ folder to edit. Note this version has parameters for stack size etc that may or may not be appropriate
+
+To get rid of the error message about 1024 file limit see https://stackoverflow.com/posts/3828263num4/revisions. Alternately type **ulimit -n 40000** as a command before **sudo neo4j start**. An example [[/etc/default/neo4j]] is in the docs and config directory.
+Running the cypher script from the command line using neo4j-shell will not work unless the server is not running. Unfortunately the only way I have managed to stop the server is by resetting the box.
+
+Cypherupload.r negates the need to do this issuing commands via the RNeo4j interface (still uploading via UPLOADCSV). 
+
+
+Neo4j uses the [[Storage of processed data:neo4j:cypher|cypher]] query language which interfaces with R through RNeo4j.
+
+The default password for a database is neo4j but you are required to change it. This is easy if logging in with the browser, but is a pain purely on the terminal. Use the following
+
+{{{code: lang="desktop" linenumbers="True"
+curl -H "Content-Type: application/json" -XPOST -d '{"password":"new password"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
+}}}
+
+
+Neo4j has a system designed to treat concurrent wrte requests whereby sessions request a lock on objects in a cetain order, and the database sorts through this queue. This runs into problems when the sessions request the same locks but in a different order. When this happens the database will reject all but one of the deadlocked requests. The design intends applications either include retry code for when this happens or run via a single JVM for instance. This design makes sense in terms of normal applications, but not in terms of the LOAD_CSV cypher utility which was designed for non-cuncurrent, and one time, transfer of existing database data. The problem with concurrent LOAD_CSV sessions (for instance in the version of [[Processing:postbarefoot|postbarefoot]] that uploads at the end) writing to the same nodes (here edges to segments) is the CSV will be partially loaded, so it is not apparent where the process needs to restart.
+
+Specifically this lock was occuring when concurrent postbarefoot versions placed holds on segment nodes.
+
+This is not a huge problem, since the virtue of writing the data within postbarefoot was less speed related than memory saving (and reducing the number of scripts). This is also served by the alternate barefoot version which appends itself to csvs for each session, and these CSVs are uploaded non-concurrently. Other alternatives include
+	- writing csvs for each segment (via appended files) and uploading them concurrently although this could easily have the same problem only with trip nodes, albeit less frequently
+	- writing to the database line by line within R (or Python).
+	- writing to the database directly from Barefoot, which would be faster and closer to the intended use of Neo4j, but more painful to write and more opaque for my successors. I'd probably do this creating a neo4j client class and inserting it around line 140 in [[Processing:Barefoot:ServerControl.java|ServerControl.java]].
+	- creating a java program just for feeding uploads to
+	- I am trying LOAD_CSV with much smaller commit sizes (2018-05-18)
+
+Upload (69 million nodes) takes 4 hours with non concurrent LOAD_CSV on Azure
+
+UPDATE 2018-05-31
+
+Further investigation has implied the lock only occurs in cases of merge. This means I can theoretically get around the problem by writing the segment nodes beforehand and matching segments rather than merging them. This would avoid lock problems because, as uploads are segregated by vehicle, merge statements would not collide. I have made changes to postbarefoot and the upload scripts and have include addSegments.r
+
+UPDATE 2018-06-01 yeah nah doesn't work
+
+There are other methods that let one bulk import data but these rely on non-running databases and pre-generated ids for all nodes, which is not practical for constant insertions of data.
+
+
+
+As such I am investigating [[+Go interfaces:Go interfaces]]

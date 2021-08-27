@@ -1,0 +1,7 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-02-01T16:14:42+11:00
+
+====== uploadscripts ======
+Created Friday 01 February 2019
+
