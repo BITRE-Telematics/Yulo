@@ -63,13 +63,7 @@ func geocode_stop(stop stop, last_index int) (processedStop, int) {
 		Lon:     stop.point.Lon(),
 	}
 
-	//pt := orb.Point{stop.point.Lon(), stop.point.Lat()}
-	//var last_index_out int
-	// stopout.Sa2, stopout.Gcc, last_index_out = pointInPoly(pt, SA2, "SA2_MAIN16", last_index)
-	// //fmt.Println(stopout.Gcc)
-	// if stopout.Sa2 == "NA" {
-	// 	stopout.Sa2, stopout.Gcc = nearestPoly(pt, SA2, "SA2_MAIN16")
-	// }
+	
 	last_index_out := match_point(stopout.Lon, stopout.Lat, SA2, last_index)
 	stopout.Sa2 = (*SA2)[last_index_out].SA2
 	stopout.Gcc = (*SA2)[last_index_out].GCC

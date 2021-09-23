@@ -186,7 +186,7 @@ if __name__ == '__main__':
   
   if args.geocode == "True":
     print('Geocoding')
-    SA2 = gpd.read_file('../shapefiles/SA2_2016_AUST.geojson')
+    SA2 = gpd.read_file('../shapefiles/SA2_2021_AUST.geojson')
 
     SA2 = SA2[[g is not None for g in SA2.geometry]]
     ##parallelise this
