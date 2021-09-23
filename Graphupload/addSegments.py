@@ -21,10 +21,10 @@ def geocode_segs(shp, SA2):
   shp.crs = SA2.crs
   ##add nearest neighbourcode
   shp = gpd.sjoin(shp, SA2, op = 'within', how = 'left')
-  shp = shp.drop(['SA2_5DIG16', 'SA2_NAME16', 'SA3_CODE16', 'SA3_NAME16',
-       'SA4_CODE16', 'SA4_NAME16','GCC_NAME16', 'STE_CODE16',
-       'STE_NAME16', 'AREASQKM16', 'index_right'], axis = 1)
-  shp = shp.rename(columns = {'SA2_MAIN16': 'SA2', "GCC_CODE16": 'GCC'})
+  shp = shp.drop([ "SA2_NAME21", "CHG_FLAG21", "CHG_LBL21", "SA3_CODE21",
+   "SA3_NAME21", "SA4_CODE21", "SA4_NAME21", "GCC_NAME21", "STE_CODE21",
+    "STE_NAME21", "AUS_CODE21", "AUS_NAME21", "AREASQKM21", "LOCI_URI21"], axis = 1)
+  shp = shp.rename(columns = {'SA2_CODE21': 'SA2', "GCC_CODE21": 'GCC'})
   shp.SA2 = shp.SA2.fillna('0')
   shp.SA2 = shp.SA2.apply(lambda x: '0' if x == '9' else x) ## depending on results maybe just add to the dictionary as NSW time
   ##posisble fix for geo_code errors
@@ -41,11 +41,10 @@ def fix_geocode(df, SA2):
   nearest_poly1 = partial(nearest_poly, SA2 = SA2)
   with Pool() as p:
     ind = p.map(nearest_poly1, points)
-  # df_notmatched.SA2 = df_notmatched.SA2.apply(lambda x: SA2.SA2_MAIN16.iloc[ind])
-  # df_notmatched.GCC = df_notmatched.GCC.apply(lambda x: GCC.GCC_CODE16.iloc[ind])
+ 
 
-  df_notmatched.SA2 = [SA2.SA2_MAIN16.iloc[i] for i in ind]
-  df_notmatched.GCC = [SA2.GCC_CODE16.iloc[i] for i in ind]
+  df_notmatched.SA2 = [SA2.SA2.iloc[i] for i in ind]
+  df_notmatched.GCC = [SA2.GCC.iloc[i] for i in ind]
   
   df = pd.concat([pd.DataFrame(df[df.SA2!='0']), pd.DataFrame(df_notmatched)])
   
