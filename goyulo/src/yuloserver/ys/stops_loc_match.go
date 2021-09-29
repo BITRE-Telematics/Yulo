@@ -3,7 +3,7 @@ package ys
 //functions for making and using rtree and matchign stops to locations
 import (
 	"fmt"
-	//"github.com/gosexy/to"
+	//"github.com/xiam/to"
 	"github.com/kyroy/kdtree"
 	"github.com/kyroy/kdtree/points"
 	"github.com/neo4j/neo4j-go-driver/neo4j"

@@ -1,8 +1,8 @@
-# gosexy/yaml
+# xiam/yaml
 
 This package is a wrapper of [goyaml][2].
 
-`gosexy/yaml` provides friendly methods for loading, reading and writing to and
+`xiam/yaml` provides friendly methods for loading, reading and writing to and
 from [YAML][3] formatted files.
 
 Useful if you just want to read/write setting files in your Go programs.
@@ -10,7 +10,7 @@ Useful if you just want to read/write setting files in your Go programs.
 ## Installation
 
 ```
-go get menteslibres.net/gosexy/yaml
+go get menteslibres.net/xiam/yaml
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ go get menteslibres.net/gosexy/yaml
 After installing, use the following import path.
 
 ```go
-import "menteslibres.net/gosexy/yaml"
+import "menteslibres.net/xiam/yaml"
 ```
 
 Here's an example that creates a YAML file and writes some values on it:
@@ -27,7 +27,7 @@ Here's an example that creates a YAML file and writes some values on it:
 package main
 
 import (
-	"menteslibres.net/gosexy/yaml"
+	"menteslibres.net/xiam/yaml"
 )
 
 func main() {
@@ -99,7 +99,7 @@ fmt.Printf("%d\n", i)
 // Prints: 1
 ```
 
-You can also use [gosexy/to][4] to convert from `interface{}` into a compatible
+You can also use [xiam/to][4] to convert from `interface{}` into a compatible
 type:
 
 ```go
@@ -114,7 +114,7 @@ fmt.Printf("%d\n", i)
 
 See the [online docs][1].
 
-[1]: http://godoc.org/menteslibres.net/gosexy/yaml
+[1]: http://godoc.org/menteslibres.net/xiam/yaml
 [2]: http://launchpad.net/goyaml
 [3]: http://www.yaml.org
-[4]: https://menteslibres.net/gosexy/to
+[4]: https://menteslibres.net/xiam/to

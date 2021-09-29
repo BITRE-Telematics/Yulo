@@ -26,7 +26,7 @@ package yaml
 import (
 	"./gopkg.in/yaml.v1"
 	"fmt"
-	"github.com/gosexy/dig"
+	"github.com/xiam/dig"
 	"log"
 	"os"
 	"reflect"

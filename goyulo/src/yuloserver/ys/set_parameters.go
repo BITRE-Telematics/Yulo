@@ -2,7 +2,7 @@ package ys
 
 import (
 	"./yaml"
-	"github.com/gosexy/to"
+	"github.com/xiam/to"
 )
 
 var Creds *yaml.Yaml

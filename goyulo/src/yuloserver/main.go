@@ -3,7 +3,7 @@ package main
 import (
 	"./ys"
 	"fmt"
-	"github.com/gosexy/to"
+	"github.com/xiam/to"
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 	//"github.com/paulmach/orb/geojson"
 	//"io/ioutil"

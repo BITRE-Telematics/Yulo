@@ -4,7 +4,7 @@ import (
 	//"bytes"
 	"encoding/csv"
 	"fmt"
-	"github.com/gosexy/to"
+	"github.com/xiam/to"
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 	//"net/http"
 	"math/rand"

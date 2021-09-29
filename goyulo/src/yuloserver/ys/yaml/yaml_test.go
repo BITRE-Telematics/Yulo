@@ -1,7 +1,7 @@
 package yaml
 
 import (
-	"github.com/gosexy/to"
+	"github.com/xiam/to"
 	"testing"
 )
 

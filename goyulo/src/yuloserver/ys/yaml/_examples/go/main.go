@@ -1,7 +1,7 @@
 package main
 
 import (
-	"menteslibres.net/gosexy/yaml"
+	"menteslibres.net/xiam/yaml"
 )
 
 func main() {
