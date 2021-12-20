@@ -170,7 +170,7 @@ if __name__ == "__main__":
 						help="Max distance to be associated with a site")
 	parser.add_argument("-mda", "--max_dist_addr", type = float, default = 50,
 						help="Max distance to be associated with an address")
-	parser.add_argument("-mis", "--match_ind_stops", type = float, default = 50,
+	parser.add_argument("-mis", "--match_ind_stops", type = bool, default = False,
 						help="Match individual stops to locations - should be done by yuloserver now")
 	args = parser.parse_args()
 
@@ -187,7 +187,7 @@ if __name__ == "__main__":
 	print("Pulling stops for %d-%d" % (args.year, args.month))
 	stops = pull_stops(creds, args.year, args.month)
 
-	if args.mis:
+	if args.match_ind_stops:
 		print('matching %s stops to rest areas and loading zones' % len(stops.index))
 		locs = get_ras_lz(creds = creds)
 		stops_loc = lz_rest_match(stops, locs = locs, max_dist = args.max_dist, creds = creds)
@@ -223,7 +223,7 @@ if __name__ == "__main__":
 							n_firms = args.n_firms,
 							n_veh = args.n_vehicles
 							)
-	with Pool() as p:
+	with Pool(1) as p:
 		clusters = p.map( write_cluster1, stops.groupby('cluster'))
 
 	clusters = pd.DataFrame(clusters)
@@ -242,7 +242,7 @@ if __name__ == "__main__":
 	
 	clusters = [dict(c[1]) for c in clusters.iterrows()]
 	write_lz_rest_c =partial(write_lz_rest, creds = creds, node_type =  "Cluster")
-	with Pool() as p:
+	with Pool(1) as p:
 		p.map(write_lz_rest_c, clusters)
 
 

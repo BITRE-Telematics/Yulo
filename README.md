@@ -37,7 +37,8 @@ Then
 
 
 ```
-cd ../goyulo/src/yuloserver
+cd yuloserver
+go mod download
 go run main.go
 ```
 then in another window
@@ -46,6 +47,7 @@ cd ../guyulo/src/yuloserver
 python3 yuloserver_feed.py -f <filestem>
 ```
 Where `<filestem>` is the common string in csv files in the `data/` folder that are to be processed.
+	
 One can also, in the yuloserver folder, build a docker image of the go process
 ```
 sudo docker build -t yuloserver ./
