@@ -28,8 +28,9 @@ Once data is in the requistite format as described in TripGrouping or the wiki a
 ![YULO logo](yulo_logo.svg)
 
 Run 
+`sudo bash bashScripting/installations.sh`
 
-`bash bashScripting/server_update.sh && bash bashScripting/start_db_server.sh`
+`sudo bash bashScripting/server_update.sh && bash bashScripting/start_db_server.sh`
 
 (If this fails to update and start OSRM recompile the binaries as described in the directory osrm or unhash the relevant lines in the above two scripts to use Docker instead)
 

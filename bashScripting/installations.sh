@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
+
+mkdir data
+mkdir data/Residuals
 #updating repository data
 #Docker
 apt-get install \
@@ -20,14 +23,11 @@ add-apt-repository \
 add-apt-repository -y ppa:ubuntugis/ppa
 
 
-echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" | sudo tee -a /etc/apt/sources.list
+
 gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9
 gpg -a --export E084DAB9 | sudo apt-key add -
 
-#neo4j
-wget -O - https://debian.neo4j.org/neotechnology.gpg.key | apt-key add -
-echo 'deb https://debian.neo4j.org/repo stable/' | tee -a /etc/apt/sources.list.d/neo4j.list
-
+#
 
 apt-get update
 
@@ -101,31 +101,3 @@ sysctl -p
 
 ## download shapefiles and transform for goyulo and for other processes
 bash shapefiles.sh
-
-##R stuff for Shinyleaflet and analysis
-apt-get install r-base
-RScript Rinstallations.R
-
-## Local neo4j installation if used
-#apt-get install neo4j
-#cp ../Docs_and_configs/neo4j.conf /etc/neo4j/neo4j.conf
-#cp ../Docs_and_configs/neo4j /etc/default/neo4j
-
-#curl https://github.com/neo4j-contrib/neo4j-apoc-procedures/releases/download/3.5.0.2/apoc-3.5.0.2-all.jar -o /var/lib/neo4j/plugins/apoc-3.5.0.2-all.jar
-
-#curl https://github.com/neo4j-contrib/spatial/releases/download/0.26.2-neo4j-3.5.2/neo4j-spatial-0.26.2-neo4j-3.5.2-server-plugin.jar -o /var/lib/neo4j/plugins/neo4j-spatial-0.26.2-neo4j-3.5.2-server-plugin.jar
-
-
-
-##osrm
-##cd ../osrm
-##git clone https://github.com/Project-OSRM/osrm-backend.git
-##cd osrm-backend
-##mkdir -p build
-##cd build
-##cmake .. -DCMAKE_BUILD_TYPE=Release
-##cmake --build .
-##sudo cmake --build . --target install
-## mv osrm ../../
-##cd ../..
-##rm osrm-backend
