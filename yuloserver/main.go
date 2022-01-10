@@ -6,6 +6,7 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"net/http"
 	"runtime"
+	"os"
 )
 
 var (
@@ -43,6 +44,10 @@ func main() {
 	fmt.Println("Setting parameters")
 	params = ys.Set_parameters()
 	ys.Params = params
+
+	if _, err := os.Stat(params.Residual_dir); os.IsNotExist(err) {
+		errDir := os.MkdirAll(params.Residual_dir, 0755)
+	}
 
 	creds := ys.Read_creds(params.Creds)
 

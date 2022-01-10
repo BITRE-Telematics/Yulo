@@ -122,7 +122,7 @@ func ProcessVehicle(obvs []obv, opts opts) {
 
 		// alternate db write
 		start = time.Now()
-		stopswrite(stops, id)
+		stopswrite(stops, id, 1)
 		tripswrite(tripspbf, id)
 		fmt.Printf("Upload for %s completed in %s\n", id, time.Since(start).String())
 		//fmt.Printf("writing residuals for %s\n", id)
