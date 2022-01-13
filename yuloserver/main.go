@@ -46,7 +46,10 @@ func main() {
 	ys.Params = params
 
 	if _, err := os.Stat(params.Residual_dir); os.IsNotExist(err) {
-		errDir := os.MkdirAll(params.Residual_dir, 0755)
+		err := os.MkdirAll(params.Residual_dir, 0755)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	creds := ys.Read_creds(params.Creds)

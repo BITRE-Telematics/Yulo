@@ -348,7 +348,7 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 			//fmt.Println(obv)
 		}
 		time.Sleep(time.Second * 60)
-		obvwritesingle(obv, id, i+1)
+		write_obvs_batch(tripobvs, onExit, i+1)
 	}
 
 	if res != nil {
