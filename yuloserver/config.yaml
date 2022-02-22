@@ -1,5 +1,5 @@
 # global vars
-  max_routines: 48
+  max_routines: 10
   yuloport: 6969
 # resource limits - if used instead of max_routines
   max_cpu : 0.9
@@ -33,4 +33,4 @@
   error_log: error_log.txt
 # address and stop matching - change boolean if no locs in database
   match_locs: True
-  max_loc_dist: 200
+  max_loc_dist: 400

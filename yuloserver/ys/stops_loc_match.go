@@ -40,16 +40,20 @@ func get_locs(loc_type string) []loc {
 	//fmt.Println("Running query")
 	locquery, err := session.Run(loc_cypher,
 		map[string]interface{}{})
-
+	var locs []loc
 	if err != nil {
 		fmt.Println(err)
 	}
+	if locquery == nil {
+		fmt.Println("nil result")
+		return locs
+	}
 
-	if locquery.Err() != nil {
+	if locquery != nil {
 		fmt.Println(locquery.Err())
 	}
 	fmt.Printf("Building %s list\n", loc_type)
-	var locs []loc
+
 	var loc loc
 	for locquery.Next() {
 		loc.lat = locquery.Record().GetByIndex(0).(float64)

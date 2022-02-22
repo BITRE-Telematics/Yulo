@@ -1,7 +1,5 @@
 package ys
 
-
-
 import (
 	"fmt"
 	"strconv"
@@ -148,7 +146,7 @@ type writeObv struct {
 	AZIMUTH        string
 	DATETIME       int64
 	DATETIME_UTC   int64
-	DATETIME_DT    string
+	DATETIMEDT     string
 	DATETIME_UTCDT string
 	SPEED          string
 	IMPUTED_SPEED  string
@@ -247,7 +245,7 @@ func to_writeObv(obv processedObv, id string, trip string) writeObv {
 		DATETIME:       obv.Datetime,
 		DATETIME_UTC:   obv.Datetime_utc,
 		DATETIME_UTCDT: obv.Datetime_utcdt,
-		DATETIME_DT:    obv.Datetime_dt,
+		DATETIMEDT:     obv.Datetime_dt,
 		LAT:            obv.Point.Lat(),
 		LON:            obv.Point.Lon(),
 		SPEED:          to_string(obv.Speed, 1),
@@ -263,7 +261,7 @@ func to_writeObv(obv processedObv, id string, trip string) writeObv {
 		imp_obv_str = append(imp_obv_str, o.Osm_id+"$"+strconv.FormatBool(o.Forward))
 	}
 	writeObv.IMP_OBVS = imp_obv_str
-	
+
 	return writeObv
 }
 
@@ -348,7 +346,7 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 			//fmt.Println(obv)
 		}
 		time.Sleep(time.Second * 60)
-		write_obvs_batch(tripobvs, onExit, i+1)
+		write_obs_batch(tripobvs, onExit, i+1)
 	}
 
 	if res != nil {
@@ -366,15 +364,13 @@ func tripswrite(trips []processedTrip, id string) {
 	for _, t := range trips {
 
 		wg.Add(1)
-		
-		obvs_mapped := maps_obvs(t.Obvs, id, t.Trip)
-		
-		//fmt.Println(obvs_mapped)
-		go write_obs_batch(obvs_mapped, func() { wg.Done() }, 1)
-	}
-	
 
-	
+		obvs_mapped := maps_obvs(t.Obvs, id, t.Trip)
+
+		//fmt.Println(obvs_mapped)
+		write_obs_batch(obvs_mapped, func() { wg.Done() }, 1)
+	}
+
 	wg.Wait()
 	tripwrite(trips, 1)
 }

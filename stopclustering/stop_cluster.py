@@ -226,7 +226,7 @@ if __name__ == "__main__":
 						help="Min cluster size")
 	parser.add_argument("-md", "--max_dist", type = float, default = 400,
 						help="Max distance to be associated with a site")
-	parser.add_argument("-mda", "--max_dist_addr", type = float, default = 200,
+	parser.add_argument("-mda", "--max_dist_addr", type = float, default = 400,
 						help="Max distance to be associated with an address")
 	parser.add_argument("-mis", "--match_ind_stops", type = bool, default = False,
 						help="Match individual stops to locations - should be done by yuloserver now")

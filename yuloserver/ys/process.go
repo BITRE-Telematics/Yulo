@@ -43,7 +43,7 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 		}(v)
 	}
 
-	fmt.Fprintf(w, "File completely entered into server in %s\n", time.Since(start).String())
+	fmt.Fprintf(w, "File completely entered into server in %s at $s\n", time.Since(start).String(), time.Now().String())
 
 }
 

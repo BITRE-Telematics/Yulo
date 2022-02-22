@@ -44,6 +44,12 @@ func checkDatabaseDupe(obvs []obv, max_prune int64) (bool, int64) {
 	parameters := map[string]interface{}{"ID": id, "MAX_PRUNE": max_prune}
 
 	max_result, err := session.Run(statement, parameters)
+
+	if max_result == nil {
+		fmt.Println("Nil result")
+		return false, 0
+	}
+
 	if err != nil {
 		fmt.Print("Check database error")
 	}
