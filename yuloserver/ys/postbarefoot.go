@@ -2,7 +2,7 @@ package ys
 
 import (
 	//"fmt"
-	//"github.com/neo4j/neo4j-go-driver/v4/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"github.com/paulmach/orb"
 	//"github.com/paulsmith/gogeos/geos"
 	"fmt"
@@ -45,8 +45,10 @@ type processedTrip struct {
 }
 
 func update_seg_sa2(sa2 string, gcc string, osm_id string) {
-
-	session := Db.NewSession(Sesh_config)
+	sesh_config_segs := neo4j.SessionConfig{
+		DatabaseName: Creds.Segs_db,
+	}
+	session := Db.NewSession(sesh_config_segs)
 
 	defer session.Close()
 
@@ -102,7 +104,7 @@ func pbfObv(obv Json_out, last_point orb.Point, last_index int, i int) (processe
 				fmt.Println("SA2 without STE is ", obv.SA2)
 			}
 			if obv.Osm_id != "unknown" {
-				update_seg_sa2((*SA2)[last_index_out].SA2, (*SA2)[last_index_out].GCC, obv.Osm_id)
+				//update_seg_sa2((*SA2)[last_index_out].SA2, (*SA2)[last_index_out].GCC, obv.Osm_id)
 			}
 
 		}

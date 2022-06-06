@@ -43,13 +43,14 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 		}(v)
 	}
 
-	fmt.Fprintf(w, "File completely entered into server in %s at $s\n", time.Since(start).String(), time.Now().String())
+	fmt.Fprintf(w, "File completely entered into server in %s at %s\n", time.Since(start).String(), time.Now().String())
 
 }
 
 func ProcessVehicle(obvs []obv, opts opts) {
 	sort.SliceStable(obvs, func(i, j int) bool { return obvs[i].datetime < obvs[j].datetime })
 	id := obvs[0].id
+	fmt.Println(Yellow+"Starting ", id+Reset)
 	if inc_zero_dt(obvs) {
 		fmt.Printf("Asset %s has invalid datetimes, potentially due to malformed csv, not processing \n", id)
 		Error_chan <- Error_line{
@@ -84,10 +85,11 @@ func ProcessVehicle(obvs []obv, opts opts) {
 	}
 
 	//check database for duplicates
+	//fmt.Println("Checking for dupes for %s", id)
 	if opts.prune_dupes {
 		dupes, max_db_dt := checkDatabaseDupe(obvs, opts.max_prune)
 		if dupes {
-			fmt.Printf("Possible duplicate data for Asset %s with %s < %s\n", id, min, max_db_dt)
+			fmt.Printf(Yellow+"Possible duplicate data for Asset %s with %s < %s\n"+Reset, id, min, max_db_dt)
 			obvs = prune_dupes(obvs, max_db_dt)
 
 		}
@@ -99,12 +101,12 @@ func ProcessVehicle(obvs []obv, opts opts) {
 		start := time.Now()
 		vehpack := CichCluster(obvs, id, opts.drop_first_stop)
 
-		fmt.Printf("CichCluster for %s completed in %s\n", id, time.Since(start).String())
+		fmt.Printf(Grey+"CichCluster for %s completed in %s\n"+Reset, id, time.Since(start).String())
 
 		start = time.Now()
 		stops := sum_stops(vehpack.stops)
 		// fmt.Println(len(stops))
-		fmt.Printf("SummaryStops for %s completed in %s\n", id, time.Since(start).String())
+		fmt.Printf(Grey+"SummaryStops for %s completed in %s\n"+Reset, id, time.Since(start).String())
 
 		start = time.Now()
 		tripsout, err := bffeeder(vehpack.trips)
@@ -112,11 +114,11 @@ func ProcessVehicle(obvs []obv, opts opts) {
 			fmt.Printf("Error in Barefoot for %s completed in because of : \n", id, err)
 		}
 
-		fmt.Printf("Barefoot for %s completed in %s\n", id, time.Since(start).String())
+		fmt.Printf(Grey+"Barefoot for %s completed in %s\n"+Reset, id, time.Since(start).String())
 
 		start = time.Now()
 		tripspbf := postbarefoot(tripsout)
-		fmt.Printf("Postbarefoot for %s completed in %s\n", id, time.Since(start).String())
+		fmt.Printf(Grey+"Postbarefoot for %s completed in %s\n"+Reset, id, time.Since(start).String())
 
 		//transfer_upload(tripspbf, stops, id)
 
@@ -124,13 +126,13 @@ func ProcessVehicle(obvs []obv, opts opts) {
 		start = time.Now()
 		stopswrite(stops, id, 1)
 		tripswrite(tripspbf, id)
-		fmt.Printf("Upload for %s completed in %s\n", id, time.Since(start).String())
+		fmt.Printf(White+"Upload for %s completed in %s\n"+Reset, id, time.Since(start).String())
 		//fmt.Printf("writing residuals for %s\n", id)
 
 		//add in retained too early/late residuals
 		write_resids = append(vehpack.residuals, reserved...)
 
 		writeResiduals(write_resids)
-		fmt.Printf("%s done at %s\n", id, time.Now().String())
+		fmt.Printf(Red+"%s done at %s\n"+Reset, id, time.Now().String())
 	}
 }

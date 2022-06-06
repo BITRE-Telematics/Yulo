@@ -46,6 +46,9 @@ type Cred_struct struct {
 	Bolt         string `yaml:"bolt"`
 	Db_name      string `yaml:"db_name"`
 	Transfer_key string `yaml:"transferkey"`
+	Fabric       string `yaml:"fabric_db"`
+	Segs_db      string `yaml:"segs_db"`
+	Locs_db      string `yaml:"locs_db"`
 }
 
 func Set_parameters() Para {

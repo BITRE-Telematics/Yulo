@@ -6,7 +6,7 @@ import (
 	//"github.com/xiam/to"
 	"github.com/kyroy/kdtree"
 	"github.com/kyroy/kdtree/points"
-	//"github.com/neo4j/neo4j-go-driver/v4/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geo"
 	"strconv"
@@ -29,7 +29,10 @@ type Data struct {
 
 func get_locs(loc_type string) []loc {
 	//fmt.Println("Creating session")
-	session := Db.NewSession(Sesh_config)
+	sesh_config_locs := neo4j.SessionConfig{
+		DatabaseName: Creds.Locs_db,
+	}
+	session := Db.NewSession(sesh_config_locs)
 
 	defer session.Close()
 	loc_cypher := `
@@ -49,7 +52,7 @@ func get_locs(loc_type string) []loc {
 		return locs
 	}
 
-	if locquery != nil {
+	if locquery.Err() != nil {
 		fmt.Println(locquery.Err())
 	}
 	fmt.Printf("Building %s list\n", loc_type)

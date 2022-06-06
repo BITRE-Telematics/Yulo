@@ -62,7 +62,7 @@ func mapstops(stops []processedStop, id string) map[string]interface{} {
 }
 
 func stopswrite(stops []processedStop, id string, i int) {
-	fmt.Println("writing stops for %s", id)
+	//fmt.Println("writing stops for", id)
 	session := Db.NewSession(Sesh_config)
 
 	defer session.Close()
@@ -180,10 +180,10 @@ func tripwrite(trips []processedTrip, i int) {
 			MATCH (trip:Trip{
 			  id: t.TRIP})
 			//assumes stops already uploaded
-			MATCH (prior_stop:Stop{
+			MERGE (prior_stop:Stop{
 			  id: t.PRIOR_STOP})
 
-			MATCH (following_stop:Stop{
+			MERGE (following_stop:Stop{
 			  id: t.FOLLOWING_STOP})
 
 			CREATE (trip)-[:PRECEDED_BY]->(prior_stop)
@@ -254,6 +254,7 @@ func to_writeObv(obv processedObv, id string, trip string) writeObv {
 		LENGTH:         to_string(obv.Length, 1),
 		TYPE:           o_type,
 		FORWARD:        obv.Forward,
+		STE:            obv.STE,
 	}
 
 	var imp_obv_str []string
@@ -314,7 +315,8 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 			length: toFloat(o.LENGTH),
 			type: o.TYPE,
 			add_date: timestamp()/1000,
-			forward: toBoolean(o.FORWARD)
+			forward: toBoolean(o.FORWARD),
+			ste: o.STE
 		})
 		WITH *
 		WHERE o.OSM_ID <> "unknown"
@@ -360,7 +362,7 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 
 func tripswrite(trips []processedTrip, id string) {
 	var wg sync.WaitGroup
-	fmt.Println("writing observations and trips for %s\n", id)
+	//fmt.Println("writing observations and trips for", id)
 	for _, t := range trips {
 
 		wg.Add(1)

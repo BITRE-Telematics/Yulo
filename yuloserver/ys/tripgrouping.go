@@ -210,7 +210,7 @@ func cichiter(agg aggdict, obv obv, drop_first_stop bool) aggdict {
 }
 
 func CichCluster(obvs []obv, id string, drop_first_stop bool) vehpack {
-	fmt.Printf("Tripgrouping %s with %d observations \n", id, len(obvs))
+	fmt.Printf(Cyan+"Tripgrouping %s with %d observations \n"+Reset, id, len(obvs))
 	//fmt.Println(len(obvs))
 	agg := aggdict{clustercentre: obvs[0].point,
 		lastobv: obvs[0],

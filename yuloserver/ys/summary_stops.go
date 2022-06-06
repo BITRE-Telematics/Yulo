@@ -1,10 +1,10 @@
 package ys
 
 import (
-	"fmt"
-	//"github.com/paulmach/orb"
-	//"github.com/paulmach/orb/geojson"
-	//"github.com/paulsmith/gogeos/geos"
+//"fmt"
+//"github.com/paulmach/orb"
+//"github.com/paulmach/orb/geojson"
+//"github.com/paulsmith/gogeos/geos"
 )
 
 var SA2 *[]Geog
@@ -78,7 +78,7 @@ func geocode_stop(stop stop, last_index int) (processedStop, int) {
 }
 
 func sum_stops(stops []stop) []processedStop {
-	fmt.Println("Summarising stops")
+	//fmt.Println("Summarising stops")
 	var stopsout []processedStop
 	last_index := int(0)
 	s_out := processedStop{}

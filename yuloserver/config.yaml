@@ -32,5 +32,5 @@
   creds: creds.yaml
   error_log: error_log.txt
 # address and stop matching - change boolean if no locs in database
-  match_locs: True
+  match_locs: False
   max_loc_dist: 400

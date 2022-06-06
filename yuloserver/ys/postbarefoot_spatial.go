@@ -46,7 +46,7 @@ func match_point(x float64, y float64, Geogs *[]Geog, ind int) int {
 	}
 
 	//nearest neighbour code kicks in if no match yet
-	fmt.Printf("Resorting to nearest neighbour with %s \n", p)
+	//fmt.Printf(Yellow+"Resorting to nearest neighbour with %s \n"+Reset, p)
 	dist_min, err := p.Distance((*Geogs)[0].Geom)
 	if err != nil {
 		fmt.Println(err)
