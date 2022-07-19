@@ -1,0 +1,11 @@
+--- #credentials for neo4j login 
+  username: neo4j
+  password: neo4j
+  ipport: localhost:7687
+  ipporthttp: localhost:7474
+  transferkey: key
+  bolt: bolt://localhost:7687
+  db_name: neo4j
+  fabric_name: fabric
+  segs_db: neo4j
+  locs_db: neo4j
