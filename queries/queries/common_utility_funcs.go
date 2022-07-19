@@ -2,12 +2,50 @@ package queries
 
 import (
 	"encoding/csv"
+	"fmt"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"strconv"
 )
 
+var Fabric string
+var Seg_db string
+var Activityfile string
+var Year int64
+var MinDur int64
+var Month int64
+var Act_type string
+var err_c chan []string
+var Db neo4j.Driver
+var Sesh_config neo4j.SessionConfig
+var Max_routines int64
+
+type Cred_struct struct {
+	Username     string `yaml:"username"`
+	Password     string `yaml:"password"`
+	Ipport       string `yaml:"ipport"`
+	Ipporthttp   string `yaml:"importhttp"`
+	Bolt         string `yaml:"bolt"`
+	Db_name      string `yaml:"db_name"`
+	Transfer_key string `yaml:"transferkey"`
+	Fabric       string `yaml:"fabric_db"`
+	Segs_db      string `yaml:"segs_db"`
+	Locs_db      string `yaml:"locs_db"`
+}
+
+func Read_creds(credsfile string) Cred_struct {
+	file, err := ioutil.ReadFile(credsfile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	var creds Cred_struct
+	err = yaml.Unmarshal(file, &creds)
+	return creds
+}
+
 //convenience funcs for accessing neo4j records
-func floatGet(record neo4j.Record, key string) float64 {
+func floatGet(record *neo4j.Record, key string) float64 {
 	var v float64
 	if value, ok := record.Get(key); ok {
 		if value != nil {
@@ -18,7 +56,7 @@ func floatGet(record neo4j.Record, key string) float64 {
 
 }
 
-func intGet(record neo4j.Record, key string) int64 {
+func intGet(record *neo4j.Record, key string) int64 {
 	var v int64
 	if value, ok := record.Get(key); ok {
 		if value != nil {
@@ -29,7 +67,7 @@ func intGet(record neo4j.Record, key string) int64 {
 
 }
 
-func stringGet(record neo4j.Record, key string) string {
+func stringGet(record *neo4j.Record, key string) string {
 	var v string
 	if value, ok := record.Get(key); ok {
 		if value != nil {
@@ -43,8 +81,10 @@ func stringGet(record neo4j.Record, key string) string {
 //convenience functions for resuming segments
 func seg_writer(w *csv.Writer, c chan []string) {
 	for l := range c {
-		w.Write(l)
-		w.Flush()
+		if len(l) > 0 {
+			w.Write(l)
+			w.Flush()
+		}
 
 	}
 }
@@ -93,7 +133,7 @@ func azi_to_string(azi float64) string {
 	return d
 }
 
-func floatFrmt(record neo4j.Record, key string) string {
+func floatFrmt(record *neo4j.Record, key string) string {
 	str := "0"
 	if value, ok := record.Get(key); ok {
 		if value != nil {
@@ -104,7 +144,7 @@ func floatFrmt(record neo4j.Record, key string) string {
 
 }
 
-func unspecifiedNumFrmt(record neo4j.Record, key string) string {
+func unspecifiedNumFrmt(record *neo4j.Record, key string) string {
 	var length_str string
 	l, _ := record.Get(key)
 	switch l.(type) {

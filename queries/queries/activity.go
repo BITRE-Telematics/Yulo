@@ -14,15 +14,6 @@ import (
 	"time"
 )
 
-var Activityfile string
-var Year int64
-var MinDur int64
-var Month int64
-var Act_type string
-var err_c chan []string
-var Db neo4j.Driver
-var Sesh_config neo4j.SessionConfig
-
 func act_writer(w *csv.Writer, c chan []string) {
 	for l := range c {
 		w.Write(l)
@@ -90,7 +81,7 @@ func batch_query_usage(batch_id string, c chan []string, onExit func(), ind int)
 func Act_length_query(id string, i int) neo4j.Result {
 	//res := ActLength{}
 
-	statement := `MATCH(v:Vehicle{id:$VEH})-[:EMBARKED_ON]->(Trip)-[:OBSERVED_AT]->(o:Observation)-[on:ON]->(s:Segment)
+	statement := `MATCH(v:Asset{id:$VEH})-[:EMBARKED_ON]->(Trip)-[:OBSERVED_AT]->(o:Observation)-[on:ON]->(s:Segment)
        			  WHERE (on.type <> 'imputed' OR on.type IS NULL) AND o.datetimedt.year = $YEAR %s 
       			  RETURN
       			   v.id as vehicle,
@@ -99,6 +90,8 @@ func Act_length_query(id string, i int) neo4j.Result {
       			   o.datetimedt.day as day,
       			   left(s.sa2, 1) as state
                  `
+	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_suffix := "} RETURN vehicle, sum_length, month, day, state"
 	var parameters map[string]interface{}
 	if (Month > 0) && (Month < 13) {
 		//str_month := strconv.FormatInt(Month, 10)
@@ -111,11 +104,9 @@ func Act_length_query(id string, i int) neo4j.Result {
 		parameters = map[string]interface{}{"VEH": id, "YEAR": Year, "MONTH": Month}
 
 	}
-	session, err := session := Db.NewSession(Sesh_config)
-	if err != nil {
-		fmt.Printf("Error %v", err)
-	}
+	session := Db.NewSession(Sesh_config)
 
+	statement = fabric_prefix + statement + fabric_suffix
 	defer session.Close()
 	result, err := session.Run(statement, parameters)
 	if err != nil && i < 5 {
@@ -140,7 +131,7 @@ func Act_length_query(id string, i int) neo4j.Result {
 
 func Act_usage_query(id string, i int) neo4j.Result {
 
-	statement := `MATCH(v:Vehicle{id: $veh })-[:STOPPED_AT]->(s:Stop)
+	statement := `MATCH(v:Asset{id: $veh })-[:STOPPED_AT]->(s:Stop)
 			      			   WHERE s.end_timedt.year = $year
 			      			   AND s.end_time - s.start_time > $mindur
 			      			   RETURN v.id as vehicle,
@@ -151,19 +142,18 @@ func Act_usage_query(id string, i int) neo4j.Result {
 			      			    s.sa2 as sa2
 
 			      			   `
-
+	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_suffix := "} RETURN vehicle, start_time, end_time, month, day, sa2"
 	//fmt.Println(id)
 	//fmt.Println(Year)
 	//fmt.Println(MinDur)
+	statement = fabric_prefix + statement + fabric_suffix
 	parameters := map[string]interface{}{
 		"veh":    id,
 		"year":   Year,
 		"mindur": MinDur,
 	}
-	session, err := session := Db.NewSession(Sesh_config)
-	if err != nil {
-		fmt.Printf("Error %v", err)
-	}
+	session := Db.NewSession(Sesh_config)
 
 	defer session.Close()
 
@@ -195,13 +185,16 @@ func Act_write(filename string, resume bool) {
 	//idstruct := VehicleIds{}
 
 	fmt.Println("Getting vehicle list")
-	session, err := session := Db.NewSession(Sesh_config)
-	if err != nil {
-		fmt.Printf("Error %v", err)
-	}
+	session := Db.NewSession(Sesh_config)
+
 	defer session.Close()
 
-	idquery, err := session.Run("MATCH(v:Vehicle) RETURN v.id as id", map[string]interface{}{})
+	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_suffix := "} RETURN distinct(id)"
+	id_q := "MATCH(v:Asset) RETURN v.id as id"
+	id_q = fabric_prefix + id_q + fabric_suffix
+
+	idquery, err := session.Run(id_q, map[string]interface{}{})
 
 	if err != nil {
 		fmt.Println(err)
@@ -277,7 +270,7 @@ func Act_write(filename string, resume bool) {
 
 	length := len(process_ids)
 	fmt.Printf("Processing %d vehicles\n", length)
-	guard := make(chan struct{}, 10)
+	guard := make(chan struct{}, Max_routines)
 	//wg.Add(length)
 	last := ""
 	var headers []string

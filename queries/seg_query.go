@@ -12,8 +12,8 @@ import (
 
 func main() {
 
-	creds_file := flag.String("creds", "../../../Graphupload/neo4jcredsWIN.yaml", "database credentials")
-	params_file := flag.String("params", "../../../Graphupload/precompute_segs/go_query.yaml", "paramenter file")
+	creds_file := flag.String("creds", "creds_parameters/creds.yaml", "database credentials")
+	params_file := flag.String("params", "creds_parameters/go_query.yaml", "parameter file")
 	resume := flag.Bool("resume", false, "whether to resume an interupted query, skipping segs in outfile")
 	breakdown := flag.Bool("breakdown", false, "whether to compute breakdowns of segments")
 	bd_type := flag.String("bd_type", "hour", "time by which to break down (one of hour, month, dayOfWeek")
@@ -25,14 +25,12 @@ func main() {
 		fmt.Println("The resume flag is true")
 	}
 
-	creds, errcreds := yaml.Open(*creds_file)
-	if errcreds != nil {
-		fmt.Printf("Could not open YAML file: %s", errcreds.Error())
-	}
-	user := to.String(creds.Get("username"))
-	pass := to.String(creds.Get("password"))
-	boltaddr := to.String(creds.Get("bolt"))
-	db_name := to.String(creds.Get("db"))
+	creds := queries.Read_creds(*creds_file)
+	//fmt.Println(creds)
+	queries.Fabric = creds.Fabric
+	queries.Seg_db = creds.Segs_db
+	fmt.Println("Fabric db : ", creds.Fabric)
+	fmt.Println("Segs db : ", creds.Segs_db)
 
 	//add creds start db
 	fmt.Println("Connecting to database")
@@ -48,7 +46,7 @@ func main() {
 	defer db.Close()
 	//naming database in neo4j4
 	sesh_config := neo4j.SessionConfig{
-		DatabaseName: creds.Db_name,
+		DatabaseName: creds.Fabric,
 	}
 	queries.Sesh_config = sesh_config
 
@@ -56,7 +54,7 @@ func main() {
 		fmt.Printf("Error %v", err)
 	}
 	defer db.Close()
-	ys.Db = db
+	queries.Db = db
 	if err != nil {
 		fmt.Println("Database connection error")
 	}
@@ -75,10 +73,13 @@ func main() {
 	queries.Direction = *direction
 	queries.Db = db
 	speedfile := to.String(params.Get("speedsfile"))
+	max_routines := to.Int64(params.Get("max_routines"))
+	fmt.Println(params)
+	queries.Max_routines = max_routines
 	//volfile := to.String(params.Get("volfile"))
 	if *update_db {
 		fmt.Println("Updating database")
-		queries.Seg_write_db("database_updated_segs.csv", *resume, speedfile)
+		queries.Seg_write_db("output/database_updated_segs.csv", *resume, speedfile)
 	} else {
 
 		if *breakdown {

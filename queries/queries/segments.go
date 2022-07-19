@@ -21,10 +21,10 @@ var Byfirm bool
 var Bd_type string
 var Direction bool
 
-func batch_query(batch_id string, c chan []string, onExit func(), ind int) {
+func batch_query(batch_id string, c chan []string, onExit func(), ind int, direction bool) {
 
 	defer onExit()
-	seg_data := Seg_speedquery(batch_id, 1)
+	seg_data := Seg_speedquery(batch_id, 1, direction)
 	for seg_data.Next() {
 		//replace using keys, account for nil values
 		//fmt.Println(seg_data.Record().Values())
@@ -94,10 +94,10 @@ func batch_query(batch_id string, c chan []string, onExit func(), ind int) {
 
 }
 
-func Seg_speedquery(osm_id string, i int) neo4j.Result {
+func Seg_speedquery(osm_id string, i int, direction bool) neo4j.Result {
 	//on database restucture change to "count(a) as n_obvs and sum(size([x IN oa.type WHERE x <> 'imputed'])) as rec_obvs"
 	statement := `
-                 MATCH (s:Segment{osm_id: $OSM_ID})<-[oa:ON]-(o:Observation)<-[OBSERVED_AT]-(t:Trip)<-[:EMBARKED_ON]-(v:Vehicle)
+                 MATCH (s:Segment{osm_id: $OSM_ID})<-[oa:ON]-(o:Observation)<-[OBSERVED_AT]-(t:Trip)<-[:EMBARKED_ON]-(v:Asset)
 	              WHERE o.datetime > $START AND o.datetime < $FINISH AND o.datetimedt IS NOT NULL
 	              WITH s, o, t, v, oa
                   RETURN  
@@ -110,11 +110,14 @@ func Seg_speedquery(osm_id string, i int) neo4j.Result {
                   count(distinct(t)) as n_trips,
                   count(distinct(v)) as n_vehicles
                  `
-	if Breakdown {
-		statement = statement + fmt.Sprintf(", o.datetimedt.%[1]s as %[1]s", Bd_type)
+	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_suffix := "} RETURN osm_id, LQ_imp, Median_imp, UQ_imp, stDev_imp, n_obvs, n_trips, n_vehicles"
+	if Bd_type != "" {
+		statement = statement + fmt.Sprintf(`, o.datetimedt.%[1]s as %[1]s`, Bd_type)
+		fabric_suffix = fabric_suffix + ", " + Bd_type
 	}
 	//if restructured change to oa.azimuth
-	if Direction {
+	if direction {
 		statement = statement +
 			`
 	                        , s.forward as direction,
@@ -129,18 +132,17 @@ func Seg_speedquery(osm_id string, i int) neo4j.Result {
                              as forward
                              `
 		statement = strings.Replace(statement, "RETURN", "WHERE o.azimuth <> 0 RETURN", 1) // otherwise null values wil each get a separate row
+		fabric_suffix = fabric_suffix + ", forward, direction"
 	}
 
-	if Byfirm {
-		statement = statement + ", v.firm as firm"
-
+	if Bd_type != "" {
+		statement = statement + fmt.Sprintf(" ORDER BY o.datetimedt.%[1]s", Bd_type)
 	}
 
-	session, err := session := Db.NewSession(Sesh_config)
-	if err != nil {
-		fmt.Printf("Error %v", err)
-	}
+	session := Db.NewSession(Sesh_config)
+
 	defer session.Close()
+	statement = fabric_prefix + statement + fabric_suffix
 
 	parameters := map[string]interface{}{"OSM_ID": osm_id, "START": Start, "FINISH": Finish}
 
@@ -150,7 +152,7 @@ func Seg_speedquery(osm_id string, i int) neo4j.Result {
 			fmt.Println(err, osm_id, i)
 		}
 		time.Sleep(time.Millisecond * 1000 * time.Duration(i))
-		results = Seg_speedquery(osm_id, i+1)
+		results = Seg_speedquery(osm_id, i+1, direction)
 	}
 	//fmt.Print(osm_id, ":", res)
 	if results.Err() != nil {
@@ -170,10 +172,8 @@ func Seg_write(filename string, resume bool) {
 
 	fmt.Println("Getting segment list")
 
-	session, err := session := Db.NewSession(Sesh_config)
-	if err != nil {
-		fmt.Printf("Error %v", err)
-	}
+	session := Db.NewSession(Sesh_config)
+
 	defer session.Close()
 
 	seg_results, err := session.Run("MATCH(s:Segment) WHERE s.osm_id <> 'nan' RETURN s.osm_id as osm_id", map[string]interface{}{})
@@ -280,7 +280,7 @@ func Seg_write(filename string, resume bool) {
 	go seg_writer(w, c)
 	length := len(process_osm_ids)
 	fmt.Printf("Processing %d segments\n", length)
-	guard := make(chan struct{}, 10)
+	guard := make(chan struct{}, Max_routines)
 	//wg.Add(length)
 	last := ""
 	for i, id := range process_osm_ids {
@@ -290,7 +290,7 @@ func Seg_write(filename string, resume bool) {
 			guard <- struct{}{} //blocks until space in the channel opens
 			//fmt.Println(id)
 			go func(batch_id string, c chan []string, guard chan struct{}, ind int) {
-				batch_query(id, c, func() { wg.Done() }, ind)
+				batch_query(id, c, func() { wg.Done() }, ind, Direction)
 				<-guard
 			}(id, c, guard, i)
 			last = id
