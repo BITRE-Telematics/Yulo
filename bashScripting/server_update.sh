@@ -19,9 +19,9 @@ curl http://download.geofabrik.de/australia-oceania/australia-latest.osm.pbf -o 
 
 ##update shapefile derived from http://wiki.openstreetmap.org/wiki/User:Bgirardot/How_To_Convert_osm_.pbf_files_to_Esri_Shapefiles
 
-ogr2ogr -overwrite -f "ESRI Shapefile" ../shapefiles/AustraliaRoads.shp map/osm/australia.osm.pbf -progress -sql "select osm_id,name,highway,other_tags from lines where highway is not null or other_tags like '%ferry%'" OSM_CONFIG_FILE = ../Docs_and_configs/osmconf.ini
+ogr2ogr -overwrite -f "ESRI Shapefile" ../shapefiles/AustraliaRoads.shp map/osm/australia.osm.pbf -progress -sql "select osm_id,name,highway,maxspeed,other_tags from lines where highway is not null or other_tags like '%ferry%'" -oo CONFIG_FILE=../Docs_and_configs/osmconf.ini
 #ogr2ogr -overwrite -f "geojson" ../shapefiles/AustraliaRoads.geojson ../shapefiles/AustraliaRoads.shp -progress
-ogr2ogr  -f Geojson ../shapefiles/AustraliaRoads.geojson map/osm/australia.osm.pbf -progress -sql "select osm_id,name,highway,other_tags from lines where highway is not null or other_tags like '%ferry%'" OSM_CONFIG_FILE = ../Docs_and_configs/osmconf.ini
+ogr2ogr  -f Geojson ../shapefiles/AustraliaRoads.geojson map/osm/australia.osm.pbf -progress -sql "select osm_id,name,highway,maxspeed,other_tags from lines where highway is not null or other_tags like '%ferry%'" -oo CONFIG_FILE=../Docs_and_configs/osmconf.ini
 ##if changing to web mercator
 #ogr2ogr -overwrite -f "ESRI Shapefile" ../shapefiles/AustraliaRoads.shp map/osm/australia.osm.pbf -progress -sql 'select osm_id,name,highway,other_tags from lines where highway is not null' OSM_CONFIG_FILE = ../Docs_and_configs/osmconf.ini -s_srs EPSG:4326 -t_srs EPSG:3857
 ##if simplifying with the commandline mapshaper interface
@@ -30,8 +30,8 @@ ogr2ogr  -f Geojson ../shapefiles/AustraliaRoads.geojson map/osm/australia.osm.p
 
 
 
-cd ../Graphupload
-python3 addSegments.py -g=False
+cd ../add_segments
+python3 addSegments.py -g=True -l=True
 
 cd ../barefoot
 

@@ -25,6 +25,7 @@ def geocode_segs(shp, SA2):
    "SA3_NAME21", "SA4_CODE21", "SA4_NAME21", "GCC_NAME21", "STE_CODE21",
     "STE_NAME21", "AUS_CODE21", "AUS_NAME21", "AREASQKM21", "LOCI_URI21"], axis = 1)
   shp = shp.rename(columns = {'SA2_CODE21': 'SA2', "GCC_CODE21": 'GCC'})
+  SA2 = SA2.rename(columns = {'SA2_CODE21': 'SA2', "GCC_CODE21": 'GCC'})
   shp.SA2 = shp.SA2.fillna('0')
   shp.SA2 = shp.SA2.apply(lambda x: '0' if x == '9' else x) ## depending on results maybe just add to the dictionary as NSW time
   ##posisble fix for geo_code errors
@@ -110,7 +111,7 @@ def writer(row, creds, args):
     seg_upload = seg_upload + ', segment.length = toFloat($length)'             
   db = 'bolt://%s' % creds['ipport']
   g = neo4j.GraphDatabase.driver(db, auth = (creds['username'], creds['password']))
-  with g.session() as session:
+  with g.session(database = creds['segs_db']) as session:
     try :
       session.run(seg_upload, row)
     except (ClientError, SecurityError, CypherSyntaxError) as e :
@@ -154,9 +155,9 @@ def seg_sa2_pull(tx):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument("-c", "--creds", type = str, default = "neo4jcredsWIN.yaml",
+  parser.add_argument("-c", "--creds", type = str, default = "/creds/neo4jcredsWIN.yaml",
                         help="credential yaml for database")
-  parser.add_argument("-f", "--file", type = str, default = "../shapefiles/AustraliaRoads.geojson",
+  parser.add_argument("-f", "--file", type = str, default = "/shapefiles/AustraliaRoads.geojson",
                         help="file with segment data")
   parser.add_argument("-g", "--geocode", type = str, default = 'True',
                         help="geocode segments")
@@ -164,8 +165,10 @@ if __name__ == '__main__':
                         help="add other tags")
   parser.add_argument("-l", "--length", type = str, default = 'False',
                         help="compute segment length")
-  parser.add_argument("-j", "--json", type = str, default = '../barefoot/map/tools/seg_sa2s.json',
+  parser.add_argument("-j", "--json", type = str, default = '/barefoot/map/tools/seg_sa2s.json',
                         help="location of json output for segment geooding to SA2")
+  parser.add_argument("-nc", "--n_cores", type = int, default = 15,
+                        help="No of cores for upload")
   args = parser.parse_args()
 
 
@@ -180,13 +183,16 @@ if __name__ == '__main__':
   print('Processing %s roads' % len(roads.index))
   
   if args.length == 'True':
-    with Pool() as p:
-      print('Calculating lengths')
-      roads['length'] = roads.geometry.apply(lambda x: calc_length(x))
+  #  with Pool() as p:
+    print('Calculating lengths')
+  #    roads['length'] = roads.geometry.apply(lambda x: calc_length(x))
+    roads.geometry = roads.geometry.to_crs(3112)
+    roads['length'] = roads.geometry.length
+    roads.geometry = roads.geometry.to_crs(4326)
   
   if args.geocode == "True":
     print('Geocoding')
-    SA2 = gpd.read_file('../shapefiles/SA2_2021_AUST.geojson')
+    SA2 = gpd.read_file('/shapefiles/SA2_2021_AUST.geojson')
 
     SA2 = SA2[[g is not None for g in SA2.geometry]]
     ##parallelise this
@@ -204,8 +210,8 @@ if __name__ == '__main__':
   print('Processing tags')
   roads.other_tags = roads.other_tags.fillna("")
   roads.highway = roads.apply(lambda x: 'ferry' if 'ferry' in x.other_tags else x.highway, axis = 1)
-  roads['speed_lim'] = roads.other_tags.apply(lambda x: re.sub(r".*maxspeed\"=>\"([0-9]+).*" , r"\1", x))
-  roads.speed_lim = roads.speed_lim.apply(lambda x: x if "=>" not in x else "NA")
+  roads['speed_lim'] = roads.maxspeed
+  
 
 
   roads = roads.iterrows()
@@ -217,13 +223,13 @@ if __name__ == '__main__':
 
   print('writing roads')
   writer1 = partial(writer, creds = creds, args = args)
-  with Pool(1) as p:
+  with Pool(args.n_cores) as p:
     p.map(writer1, roads)
 
 
 
   
-  with g.session() as session:
+  with g.session(database = creds['segs_db']) as session:
     roads_db = session.read_transaction(seg_sa2_pull)
 
   sa2_dict = dict(zip(roads_db.osm_id, zip(roads_db.SA2, roads_db.GCC)))

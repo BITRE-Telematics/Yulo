@@ -1,0 +1,1 @@
+sudo docker run --rm  -v ${PWD}/../Graphupload:/creds -v ${PWD}/../barefoot:/barefoot -v ${PWD}/../shapefiles:/shapefiles add_segments match_stops_only.py -c /creds/neo4jcredsWIN.yaml

@@ -1,0 +1,12 @@
+geopandas==0.8.1
+geopy
+neo4j==4.0.2
+neobolt==1.7.17
+numba==0.50.1
+numpy==1.17.4
+pandas==1.1.0
+PyYAML==6.0
+shapely
+rtree
+
+
