@@ -151,12 +151,19 @@ public class MatcherKState extends KState<MatcherCandidate, MatcherTransition, M
                   tupleMatched.put("imputed_azimuth", imputed_azimuth);
                   tupleMatched.put("target", Long.toString(target));
                   tupleMatched.put("datetime", time);
-                  jsoncandidate.put("type", "matched path");
-                  jsoncandidate.put("length", length);
+                  
                   //tupleMatched.put("n_legs", n);
                   //duplicate json fields for backwards compatability
                   tupleMatched.put("type", "matched path");
                   tupleMatched.put("length", length);
+                  //adding to parent
+                  jsoncandidate.put("type", "matched path");
+                  jsoncandidate.put("length", length);
+                  jsoncandidate.put("source_frac", 1-candidate.transition().route().source().fraction());
+                  //checkthis
+                  jsoncandidate.put("target_frac", candidate.transition().route().target().fraction());
+                  jsoncandidate.put("source_id", Long.toString(candidate.transition().route().get(0).refid()));
+                  //jsoncandidate.put("target_id", candidate.transition().route().get(n-1).refid());
                   //tupleMatched.put("gap", gap);
                   if (imputed_speed < 120){
                     jsoncandidate.put("imputed_speed" , imputed_speed);

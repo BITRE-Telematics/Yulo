@@ -130,8 +130,8 @@ public class Path<E extends AbstractEdge<E>> {
         for (int i = 1; i < edges.size(); ++i) {
             value += cost.cost(edges.get(i));
         }
-
-        value -= cost.cost(target.edge(), 1 - target.fraction());
+        //this may be incorrect
+        value -= cost.cost(target.edge(), target.fraction());
 
         return value;
     }
