@@ -46,10 +46,14 @@ type Json_out struct {
 	Length        float64   `json:"length"`
 	SA2           string    `json:"sa2"`
 	GCC           string    `json:"gcc"`
-	Newsubtrip    bool
-	Lat           float64
-	Lon           float64
-	Speed         float64
+	Source_frac   float64   `json:"source_frac"`
+	Source_id     string    `json:"source_id"`
+	Target_frac   float64   `json:"target_frac"`
+	//Target_id     string    `json:"target_id"`
+	Newsubtrip bool
+	Lat        float64
+	Lon        float64
+	Speed      float64
 }
 
 type trip_bf_out struct {
@@ -84,13 +88,18 @@ func bffeed(trip trip) (trip_bf_out, error) {
 
 		var obvs []Json_out
 
+		//if i == 1 {
+		//	fmt.Println(string(body))
+		//}
+
 		err = json.Unmarshal([]byte(body), &obvs)
+
 		if err != nil {
 			//fmt.Printf("%s error from barefoot output json with %s with %d points\n", err, trip.tripid, len(trip.obvs))
 
 		}
-
-		//fmt.Println(obvs)
+		//n := len(obvs) - 1
+		//fmt.Println(obvs[n].Target_frac)
 
 		matched_trip = append(matched_trip, obvs...)
 

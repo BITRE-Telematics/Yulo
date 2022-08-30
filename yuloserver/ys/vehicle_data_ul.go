@@ -37,7 +37,7 @@ func upload_veh_data(id string, veh_type string, firm string) {
 		label = "Trailer"
 	}
 	//we can potentially end up with mislabeled assets where trailers are initially unknown.
-	statement2 := fmt.Sprintf("MERGE(a:Asset{id: $ID}) WITH a WHERE LENGTH(LABELS(a)) < 2 SET a:%s", label)
+	statement2 := fmt.Sprintf("MERGE(a:Asset{id: $ID}) WITH a WHERE SIZE(LABELS(a)) < 2 SET a:%s", label)
 	parameters2 := map[string]interface{}{
 		"ID": id,
 	}

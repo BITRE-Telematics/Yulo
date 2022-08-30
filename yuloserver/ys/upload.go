@@ -159,6 +159,10 @@ type writeObv struct {
 	TRIP           string
 	IMP_OBVS       []string
 	FORWARD        bool
+	//TARGET_ID      string
+	TARGET_FRAC float64
+	SOURCE_ID   string
+	SOURCE_FRAC float64
 }
 
 func to_string(f float64, v int) string {
@@ -179,16 +183,21 @@ func tripwrite(trips []processedTrip, i int) {
 		UNWIND $TRIPS as t
 			MATCH (trip:Trip{
 			  id: t.TRIP})
-			//assumes stops already uploaded
-			MERGE (prior_stop:Stop{
-			  id: t.PRIOR_STOP})
+			//merge call required for fabric so it checks for the nil value empty string
+			
+			FOREACH (ignoreMe IN CASE WHEN t.PRIOR_STOP <> "" THEN [1] ELSE [] END |
+				MERGE (prior_stop:Stop{
+				  id: t.PRIOR_STOP})
 
-			MERGE (following_stop:Stop{
-			  id: t.FOLLOWING_STOP})
+				CREATE (trip)-[:PRECEDED_BY]->(prior_stop)
+			)
 
-			CREATE (trip)-[:PRECEDED_BY]->(prior_stop)
+			FOREACH (ignoreMe IN CASE WHEN t.FOLLOWING_STOP <> "" THEN [1] ELSE [] END |
+				MERGE (following_stop:Stop{
+				  id: t.FOLLOWING_STOP})
 
-			CREATE (trip)-[:FOLLOWED_BY]->(following_stop)
+				CREATE (trip)-[:FOLLOWED_BY]->(following_stop)
+			)
 
 			WITH trip
 
@@ -255,6 +264,10 @@ func to_writeObv(obv processedObv, id string, trip string) writeObv {
 		TYPE:           o_type,
 		FORWARD:        obv.Forward,
 		STE:            obv.STE,
+		//TARGET_ID:      obv.Target_id,
+		TARGET_FRAC: obv.Target_frac,
+		SOURCE_ID:   obv.Source_id,
+		SOURCE_FRAC: obv.Source_frac,
 	}
 
 	var imp_obv_str []string
@@ -328,13 +341,24 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 		CREATE (trip)-[:OBSERVED_AT]->(observation)
 		
 		CREATE (observation)-[on:ON]->(segment) 
-		SET on.type = o.TYPE, on.forward = toBoolean(o.FORWARD)
+		SET on.type = o.TYPE, on.forward = toBoolean(o.FORWARD), on.frac = o.TARGET_FRAC
+
+		MERGE (source:Segment{
+			osm_id: o.OSM_ID
+			})
+
+		CREATE (trip)-[:OBSERVED_AT]->(observation)
+		
+		CREATE (observation)-[on_source:ON]->(source) 
+		SET on_source.type = "source", on_source.forward = toBoolean(o.FORWARD), on_source.frac = o.SOURCE_FRAC
+
+
 		
 		WITH observation, o, segment
 		UNWIND o.IMP_OBVS as impobvs
 		MERGE(impseg:Segment{osm_id: split(impobvs, '$')[0] })
 		CREATE (observation)-[imp_on:ON]->(impseg)
-		SET imp_on.type = 'imputed', imp_on.forward = toBoolean(split(impobvs, '$')[1])
+		SET imp_on.type = 'imputed', imp_on.forward = toBoolean(split(impobvs, '$')[1]), imp_on.frac = 1
 		
 		
 		RETURN segment.osm_id
