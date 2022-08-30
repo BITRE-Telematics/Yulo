@@ -23,8 +23,7 @@ Optionally it may also include
 ```
 All other fields are ignored.
 
-You will need to create a NEO4j database (with receiving server if using LOAD_CSV) either locally or on another machine and then add the ip, port number and credentials to config.yaml and creds.yaml files in `yuloserver/`. The code assumes a fabric database is set up with the name in `yuloserver/creds.yaml` as `fabric_db` encompassing all databases where data might be stored. You can start with just one, but it must be added to the neo4j conf file. You can also stipulate separate databases for storing segment data and location data but this is not necessary.
-
+You will need to create a NEO4j database (with receiving server if using LOAD_CSV) either locally or on another machine and then add the ip, port number and credentials to config.yaml and creds.yaml files in goyulo/src/yuloserver
 Once data is in the requistite format as described in TripGrouping or the wiki and relevant credential files are created.
 ![YULO logo](yulo_logo.svg)
 
@@ -59,6 +58,12 @@ The interaction of the different elements is roughly sketched below.
 ![Flowchart](flowchart.jpg)
 We are indebted to `https://github.com/bmwcarit/barefoot`, the code of which we have adapated.
 
+At the moment both processes asssume the database is running on another machine which is operating a simple file server (similar to that in `goyulo/src/server`). The database can also be hosted locally and `goyulo/src/yuloserver/ys/transfer_upload.go` mildly edited to remove the transfer of files. There is also an alternate upload method in `goyulo/src/yuloserver/ys/upload.go`
 
+`server_update.sh` assumes matching will be performed on OpenStreetMap data. This can be circumvented to use other data by creating an osm formatted xml file. This can be done using the tool `geojson2osm2` javascript tool as such
+```
+npm i https://github.com/BITRE-Telematics/geojson2osm2
+npx geojson2osm2 original.geojson > barefoot/map/osm/australia.osm
 
-
+```
+and altering `server_update.sh` to use execute `import_xml.sh` in place of `import.sh`, as well as directing osrm to extract from the osm file rather than osm.pbf. Note the geojson must include `highway` tags that are accounted for in `road-types.json` which can be edited as needed.
