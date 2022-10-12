@@ -14,9 +14,10 @@ import (
 	//"unicode/utf8"
 	"strings"
 )
-
+//Current_OS is set to Windows if yuloserver is running on windows to ensure is_func uses the current command line utlity
 var Current_OS string
 
+//json_in is a struct to format json requests to barefoot
 type json_in struct {
 	Point    string  `json:"point"`
 	Datetime int64   `json:"time"`
@@ -24,8 +25,7 @@ type json_in struct {
 	Id       string  `json:"id"`
 }
 
-//try reshaping the barefoot output again
-
+//imp_obv is to hold imputed segments returned from barefoot
 type imp_obv struct {
 	Osm_id          string  `json:"osm_id"`
 	Imputed_azimuth float64 `json:"imputed_azimuth"`
@@ -33,7 +33,7 @@ type imp_obv struct {
 	Target          string  `json:"target"`
 	Forward         bool    `json:"forward"`
 }
-
+//Json_out holds an observation output from barefoot along with retained data from the input
 type Json_out struct {
 	Datetime        int64   `json:"datetime"`
 	Osm_id          string  `json:"osm_id"`
@@ -46,16 +46,13 @@ type Json_out struct {
 	Length        float64   `json:"length"`
 	SA2           string    `json:"sa2"`
 	GCC           string    `json:"gcc"`
-	Source_frac   float64   `json:"source_frac"`
-	Source_id     string    `json:"source_id"`
-	Target_frac   float64   `json:"target_frac"`
-	//Target_id     string    `json:"target_id"`
-	Newsubtrip bool
-	Lat        float64
-	Lon        float64
-	Speed      float64
+	Newsubtrip    bool
+	Lat           float64
+	Lon           float64
+	Speed         float64
 }
 
+//trip_bf_out holds all the output for a single trip passed to barefoot
 type trip_bf_out struct {
 	obvs           []Json_out
 	prior_stop     string
@@ -63,7 +60,7 @@ type trip_bf_out struct {
 	id             string
 }
 
-//add error handling
+//bffeed passes data for a single trip to barefoot
 func bffeed(trip trip) (trip_bf_out, error) {
 	//fmt.Println(trip.tripid)
 	addr := Params.Host + ":" + Params.Port
@@ -88,18 +85,13 @@ func bffeed(trip trip) (trip_bf_out, error) {
 
 		var obvs []Json_out
 
-		//if i == 1 {
-		//	fmt.Println(string(body))
-		//}
-
 		err = json.Unmarshal([]byte(body), &obvs)
-
 		if err != nil {
 			//fmt.Printf("%s error from barefoot output json with %s with %d points\n", err, trip.tripid, len(trip.obvs))
 
 		}
-		//n := len(obvs) - 1
-		//fmt.Println(obvs[n].Target_frac)
+
+		//fmt.Println(obvs)
 
 		matched_trip = append(matched_trip, obvs...)
 
@@ -110,7 +102,7 @@ func bffeed(trip trip) (trip_bf_out, error) {
 }
 
 /*
-There is a strange error on a small subset of the json (cmd below) that return empty responses from the
+io_func is invoked for a strange error on a small subset of the json (cmd below) that return empty responses from the
 Barefoot server. It is always the same JSON. The same JSON works when submitted via the command line.
 This may be an encoding isue but in the mean time the error handling will write the JSON to disk and
 submit it via the system call.
@@ -161,6 +153,7 @@ func io_func(r *bufio.Reader, conn net.Conn, cmd string) (string, error) {
 	return "", nil
 }
 
+//bffeeder passes all the data for a vehicle to bffeed
 func bffeeder(trips []trip) ([]trip_bf_out, error) {
 	var tripsout []trip_bf_out
 
@@ -180,6 +173,7 @@ func bffeeder(trips []trip) ([]trip_bf_out, error) {
 
 }
 
+//tojsonobv formats an observation in the raw data into the json_in type
 func tojsonobv(obvs []obv, tripid string) []json_in {
 	var jsonobv []json_in
 
@@ -198,6 +192,7 @@ func tojsonobv(obvs []obv, tripid string) []json_in {
 	return jsonobv
 }
 
+//to_json formats a trip into json for passing to barefoot. It accounts for subtrips that may cause barefoot errors
 func to_json(t trip) []string {
 	var cmds []string
 	var subtrip []obv
@@ -222,6 +217,8 @@ func to_json(t trip) []string {
 	return cmds
 }
 
+//merge_orig merges barefoot data with the original data to retain data such as lat, lon and speed, and 
+//retains observations that were not matched by barefoot
 func merge_orig(trip trip, matched_trip []Json_out) trip_bf_out {
 	var left_overs []Json_out
 	var matched_trip_out trip_bf_out

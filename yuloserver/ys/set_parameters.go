@@ -6,8 +6,10 @@ import (
 	"io/ioutil"
 )
 
+//Creds stores database credentials and other database information
 var Creds Cred_struct
 
+//Para objects store global parameters for processing
 type Para struct {
 	Max_routines         int64   `yaml:"max_routines"`
 	Max_memory           float64 `yaml:"max_memory"`
@@ -38,6 +40,7 @@ type Para struct {
 	Max_loc_dist         int     `yaml:"max_loc_dist"`
 }
 
+//Cred_struct objects store database credentials
 type Cred_struct struct {
 	Username     string `yaml:"username"`
 	Password     string `yaml:"password"`
@@ -51,6 +54,7 @@ type Cred_struct struct {
 	Locs_db      string `yaml:"locs_db"`
 }
 
+//Set_parameters reads in parameters and assigns them to the params object
 func Set_parameters() Para {
 	configfile, err := ioutil.ReadFile("config.yaml")
 	if err != nil {
@@ -61,6 +65,7 @@ func Set_parameters() Para {
 	return Params
 }
 
+//Read_creds reads the credentials and assigns them to a Creds object
 func Read_creds(credsfile string) Cred_struct {
 	file, err := ioutil.ReadFile(credsfile)
 	if err != nil {

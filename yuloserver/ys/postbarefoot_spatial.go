@@ -8,14 +8,10 @@ import (
 	"github.com/paulsmith/gogeos/geos"
 )
 
-/*
-Two notes.
-It would probably be faster to replace the orb libraries with gogeos if possible.
-The geojson cannot have ANY null geometries in them
-*/
 
-//the last index is a heuristic that lets tit check the last observation's polygon first
 
+//match_point determines which geometry a point is in. The last index is a heuristic that lets tit check the last observation's polygon first. If it is in
+//no polygon the point is matched to the nearest one
 func match_point(x float64, y float64, Geogs *[]Geog, ind int) int {
 	p, _ := geos.NewPoint(geos.NewCoord(x, y))
 	if ind != -1 {

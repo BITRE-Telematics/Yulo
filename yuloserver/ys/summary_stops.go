@@ -7,8 +7,10 @@ import (
 //"github.com/paulsmith/gogeos/geos"
 )
 
+//SA2 contains SA2 geometries and IDs
 var SA2 *[]Geog
 
+//processedStop includes data from processed stops ready for uploading to the database 
 type processedStop struct {
 	Stopid      string
 	Vehicle     string
@@ -28,6 +30,7 @@ type processedStop struct {
 	Addr        string
 }
 
+//add_times_stop adds local datatimes to a processed stop
 func add_times_stop(stop processedStop) processedStop {
 
 	olson := make(map[string]string)
@@ -53,6 +56,8 @@ func add_times_stop(stop processedStop) processedStop {
 	return stop
 }
 
+//geocode_stop matches a stop event to the ASGS and returns a processedStop and the index of the geometry matched to 
+//as a heuristic for match_point
 func geocode_stop(stop stop, last_index int) (processedStop, int) {
 	stopout := processedStop{
 		Stopid:  stop.stopid,
@@ -77,6 +82,7 @@ func geocode_stop(stop stop, last_index int) (processedStop, int) {
 	return stopout, last_index_out
 }
 
+//sum_stops processes a slice of stops
 func sum_stops(stops []stop) []processedStop {
 	//fmt.Println("Summarising stops")
 	var stopsout []processedStop

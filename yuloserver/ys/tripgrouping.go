@@ -7,11 +7,8 @@ import (
 	"strconv"
 )
 
-//second pass stuff should be to the barefoot feeder
 
-//fix these struct fields so they're exported
-//var Params Para
-
+//obv contains data for a given observation
 type obv struct {
 	datetime    int64
 	point       orb.Point
@@ -21,6 +18,8 @@ type obv struct {
 	azimuth     float64
 }
 
+//aggdict is an aggregation object as part of the tripgrouping process. It contains the current state of the trip grouping
+//including determined trips and stops to that point and potential trip and stop data for assessing the next observation
 type aggdict struct {
 	clustercentre  orb.Point
 	lastobv        obv
@@ -33,6 +32,7 @@ type aggdict struct {
 	passed_first   bool
 }
 
+//stop objects contain data on determined stops
 type stop struct {
 	start  int64
 	end    int64
@@ -41,6 +41,7 @@ type stop struct {
 	point  orb.Point
 }
 
+//trip objects include data on determined trips
 type trip struct {
 	obvs           []obv
 	tripid         string
@@ -49,6 +50,7 @@ type trip struct {
 	following_stop string
 }
 
+//vehpack objects include data for a given vehicle after trip grouping
 type vehpack struct {
 	trips     []trip
 	stops     []stop
@@ -56,7 +58,8 @@ type vehpack struct {
 	assetid   string
 }
 
-///consider adding speed in again
+//checkdupe determines if the two indentical locations have been returned consecutively
+//this should not occur except by error
 func checkdupe(obv1 obv, obv2 obv) bool {
 	return (obv1.point.Lat() == obv2.point.Lat() &&
 		obv1.point.Lon() == obv2.point.Lon() &&
@@ -64,8 +67,7 @@ func checkdupe(obv1 obv, obv2 obv) bool {
 
 }
 
-//add lastobv for all
-
+//inpotstop updates the aggdict object when a observation is determined to be in a potential stop
 func inpotstop(obv obv, agg aggdict) aggdict {
 	agg.potstopobvs = append(agg.potstopobvs, obv)
 	l := float64(len(agg.potstopobvs))
@@ -77,8 +79,8 @@ func inpotstop(obv obv, agg aggdict) aggdict {
 	return agg
 }
 
-//second pass stuff here?
-
+//nostop updates the aggdict object when an observation is determined not to be part of
+//a stop but the potential stops observations do not constitute a stop
 func nostop(obv obv, agg aggdict) aggdict {
 
 	agg.clustercentre = obv.point
@@ -89,7 +91,8 @@ func nostop(obv obv, agg aggdict) aggdict {
 	agg.lastobv = obv
 	return agg
 }
-
+//istop updates an aggdict object when an observation is determined to be outside a stop event
+//and the potential stop is determined to be a stop
 func isstop(obv obv, agg aggdict, drop_first_stop bool) aggdict {
 	//fmt.Println("is stop")
 	l := len(agg.stops)
@@ -157,7 +160,9 @@ func isstop(obv obv, agg aggdict, drop_first_stop bool) aggdict {
 	return agg
 }
 
-//changing parameters into seconds
+//cichiter performs an iteration of the clustering process on a given observation in combination
+//with the aggregated data up to that point, determining whether each observation is
+//part of a trip or stop event
 func cichiter(agg aggdict, obv obv, drop_first_stop bool) aggdict {
 	if obv.datetime == agg.lastobv.datetime {
 		//fmt.Println("double time stamp")
@@ -209,6 +214,7 @@ func cichiter(agg aggdict, obv obv, drop_first_stop bool) aggdict {
 
 }
 
+//CichCluster takes a slice of observations and groups them into trips, stops and residuals
 func CichCluster(obvs []obv, id string, drop_first_stop bool) vehpack {
 	fmt.Printf(Cyan+"Tripgrouping %s with %d observations \n"+Reset, id, len(obvs))
 	//fmt.Println(len(obvs))

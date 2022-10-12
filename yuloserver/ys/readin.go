@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+//opts collects the instructions included in the http request
 type opts struct {
 	gen_resids_only bool
 	prune_dupes     bool
@@ -19,6 +20,7 @@ type opts struct {
 	max_prune       int64
 }
 
+//readCsvRequest reads csv data from an http request and returns it along with options included in the http headers
 func readCsvRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts) {
 
 	r.ParseMultipartForm(10 << 30)
@@ -43,7 +45,7 @@ func readCsvRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, op
 
 	compressed := strings.Contains(fn, ".gz")
 
-	obvs := readCsv(file, true, compressed)
+	obvs := readCsv(file, false, compressed)
 	opts := opts{
 		gen_resids_only: gen_resids_only,
 		prune_dupes:     prune_dupes,
@@ -54,6 +56,7 @@ func readCsvRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, op
 	return obvs, opts
 }
 
+//readCsv reads data from the request and also uploads vehicle data to the database
 func readCsv(file io.Reader, upload_info bool, compressed bool) map[string][]obv {
 	//fmt.Println("Starting readCsv")
 	m := make(map[string][]obv)
@@ -162,7 +165,7 @@ func readCsv(file io.Reader, upload_info bool, compressed bool) map[string][]obv
 	return m
 }*/
 
-//append the obvseration to the map and return whether it is already there
+//append_veh_map appends the observation to the map and return whether it is already there
 func append_veh_map(m map[string][]obv, o obv) (map[string][]obv, bool) {
 	_, ok := m[o.id]
 	if ok {

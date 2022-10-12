@@ -8,6 +8,7 @@ import (
 	"os"
 )
 
+// Geog stores SA2 geometries along with higher level identities suchg as STE and GCC
 type Geog struct {
 	SA2  string
 	STE  string
@@ -15,6 +16,7 @@ type Geog struct {
 	Geom *geos.Geometry
 }
 
+//Wkt_readin reads in ASGS geometries that have been saved in WKT format in a csv
 func Wkt_readin(wktfn string, ASGC_type string) *[]Geog {
 	wktfile, err := os.OpenFile(wktfn, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	SA2r := csv.NewReader(wktfile)

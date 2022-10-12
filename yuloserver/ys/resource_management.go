@@ -7,6 +7,7 @@ import (
   "time"
 )
 
+//ReturnMemUse returns the proportion of system memory being used as a percentage
 func ReturnMemUse() float64 {
   var m runtime.MemStats
   runtime.ReadMemStats(&m)
@@ -14,6 +15,7 @@ func ReturnMemUse() float64 {
   return usage
 }
 
+//check_resources determines if system resource use for memory and CPU is below given thresholds
 func check_resources(c chan struct{}, memlimit float64, cpulimit float64) bool {
   var memusage float64
   var cpuusage []float64

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 )
-
+//writeResiduals dumps the unprocessed observations from a vehicle to disk
 func writeResiduals(obvs []obv) {
 
 	if len(obvs) > 0 {
@@ -47,6 +47,7 @@ func writeResiduals(obvs []obv) {
 
 }
 
+//writeResidualsDb dumps residuals in csv format to an attribute in the database. It is not currently used
 func writeResidualsDb(obvs []obv, i int) {
 
 	if len(obvs) > 0 {
@@ -100,6 +101,7 @@ func writeResidualsDb(obvs []obv, i int) {
 
 }
 
+//readResiduals reads residual data for a vehicle from disc
 func readResiduals(id string) []obv {
 	resid_fn := Params.Residual_dir + id
 	file, err := os.Open(resid_fn)
@@ -115,6 +117,7 @@ func readResiduals(id string) []obv {
 	return o
 }
 
+//readResidualsDb reads residual data for a vehicle from the database
 func readResidualsDb(id string) []obv {
 	session := Db.NewSession(Sesh_config)
 	defer session.Close()
@@ -153,6 +156,7 @@ func readResidualsDb(id string) []obv {
 	return o
 }
 
+//max_datetime returns the maximum datatime from a slice of observations
 func max_datetime(obvs []obv) int64 {
 	m := obvs[0].datetime
 	for _, o := range obvs {
@@ -163,6 +167,7 @@ func max_datetime(obvs []obv) int64 {
 	return m
 }
 
+//min_datetime returns the minimum datatime from a slice of observations
 func min_datetime(obvs []obv) int64 {
 	m := obvs[0].datetime
 	for _, o := range obvs {
@@ -173,6 +178,7 @@ func min_datetime(obvs []obv) int64 {
 	return m
 }
 
+//split_resids seperates residuals into data that will be processed for the current time range and that which will not
 func split_resids(resids []obv, min int64, max int64) ([]obv, []obv) {
 	var include []obv
 	var exclude []obv

@@ -9,11 +9,14 @@ import (
 	"sort"
 	"time"
 )
-
+//DB represents a global database connection object
 var Db neo4j.Driver
+//Params are global parameters
 var Params Para
+// Guard is a channel to limit the number of concurrent processes
 var Guard chan struct{}
 
+//ProcessFile takes an http request and processes the data therein and distributes it beween processes by vehicle
 func ProcessFile(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println(r.Header.Get("filename"))
 	//fmt.Print(Params)
@@ -47,6 +50,7 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//ProcessVehicle processes a given vehicle
 func ProcessVehicle(obvs []obv, opts opts) {
 	sort.SliceStable(obvs, func(i, j int) bool { return obvs[i].datetime < obvs[j].datetime })
 	id := obvs[0].id

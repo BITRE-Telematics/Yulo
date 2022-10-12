@@ -13,20 +13,27 @@ import (
 	"strings"
 )
 
+//Addr_tree stores an r tree of addresses to be matched to
 var Addr_tree *kdtree.KDTree
+//Ra_tree stores an r tree of rest area locations to be matched to
 var Ra_tree *kdtree.KDTree
+//Loc_ra contains rest area locations
 var Loc_ra []loc
+//Loc_addr contains address locations
 var Loc_addr []loc
 
+//loc contains a location stores as a point for inserting into rtrees
 type loc struct {
 	lon, lat float64
 	id       string
 }
 
+//Data is a convenience type for inserting locs into rtrees
 type Data struct {
 	value int
 }
 
+//get_locs retrives either addess or rest areas from the database
 func get_locs(loc_type string) []loc {
 	//fmt.Println("Creating session")
 	sesh_config_locs := neo4j.SessionConfig{
@@ -69,6 +76,7 @@ func get_locs(loc_type string) []loc {
 	return locs
 }
 
+//Make_tree retrives locations from the database and builds an rtree for quick location matching
 func Make_tree(loc_type string) (*kdtree.KDTree, []loc) {
 	locs := get_locs(loc_type)
 	fmt.Printf("Making %s tree\n", loc_type)
@@ -81,6 +89,7 @@ func Make_tree(loc_type string) (*kdtree.KDTree, []loc) {
 	return t, locs
 }
 
+//check_nearest_tree matches a processedStop to the nearest location in a given rtree
 func check_nearest_tree(stop processedStop, tree *kdtree.KDTree) int {
 	nearest := tree.KNN(&points.Point{Coordinates: []float64{stop.Lon, stop.Lat}}, 1)
 	s := fmt.Sprintf("%v", nearest[0])
@@ -89,6 +98,7 @@ func check_nearest_tree(stop processedStop, tree *kdtree.KDTree) int {
 	return s_int
 }
 
+//check_dist checks if the distance between a stop and a given location is less than a given value
 func check_dist(stop processedStop, loc loc, max int) string {
 	orb_point := orb.Point{stop.Lon, stop.Lat}
 	orb_loc := orb.Point{loc.lon, loc.lat}
@@ -103,6 +113,7 @@ func check_dist(stop processedStop, loc loc, max int) string {
 	}
 }
 
+//match_locs adds the nearest rest_area and address location, if below the threshold distance, to a processed stop
 func match_locs(stop processedStop) processedStop {
 	if Ra_tree != nil {
 		//fmt.Println("Matching to locations")

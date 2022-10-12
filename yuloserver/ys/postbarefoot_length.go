@@ -10,6 +10,7 @@ import (
 	//"strconv"
 )
 
+//query_route_length sends a query to the osrm routing server where a distance was not returned by barefoot
 func query_route_length(p1 orb.Point, p2 orb.Point) float64 {
 	url := fmt.Sprintf("http://127.0.0.1:%s/route/v1/driving/%g,%g;%g,%g?steps=true", Params.Router_port, p1.Lon(), p1.Lat(), p2.Lon(), p2.Lat())
 

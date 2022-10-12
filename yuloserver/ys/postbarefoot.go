@@ -10,8 +10,10 @@ import (
 	"strings"
 )
 
+//STE is a spatial data collection of Australian states, for determining correct time zones
 var STE *[]Geog
 
+//processedImpObv collects data on imputed observations after post barefoot processing
 type processedImpObv struct {
 	Osm_id  string
 	Azimuth float64
@@ -19,6 +21,7 @@ type processedImpObv struct {
 	Forward bool
 }
 
+//processedObv collects data on observations after post barefoot processing
 type processedObv struct {
 	Datetime       int64
 	Datetime_utc   int64
@@ -35,12 +38,9 @@ type processedObv struct {
 	Lat            float64
 	Lon            float64
 	Forward        bool
-	Source_id      string
-	Source_frac    float64
-	//Target_id      string
-	Target_frac float64
 }
 
+//processedTrip collects processed Trips
 type processedTrip struct {
 	Trip           string
 	Prior_stop     string
@@ -48,6 +48,7 @@ type processedTrip struct {
 	Obvs           []processedObv
 }
 
+//update_seg_sa2 updates the sa2 associated with a segment in the database
 func update_seg_sa2(sa2 string, gcc string, osm_id string) {
 	sesh_config_segs := neo4j.SessionConfig{
 		DatabaseName: Creds.Segs_db,
@@ -78,6 +79,7 @@ func update_seg_sa2(sa2 string, gcc string, osm_id string) {
 	}
 }
 
+//pbfObv processes an observation from barefoot and adds spatial codes
 func pbfObv(obv Json_out, last_point orb.Point, last_index int, i int) (processedObv, int) {
 	o_out := processedObv{
 		Datetime:      obv.Datetime,
@@ -90,16 +92,11 @@ func pbfObv(obv Json_out, last_point orb.Point, last_index int, i int) (processe
 		Lat:           obv.Lat,
 		Lon:           obv.Lon,
 		Forward:       obv.Forward,
-		//Target_id:     obv.Target_id,
-		Target_frac: obv.Target_frac,
-		Source_id:   obv.Source_id,
-		Source_frac: obv.Source_frac,
 	}
 
 	if o_out.Osm_id == "" {
 		o_out.Osm_id = "unknown"
 	}
-
 	var last_index_out int
 	//fmt.Println(obv.SA2)
 	if strings.HasPrefix(obv.SA2, "N") || obv.SA2 == "" || obv.Osm_id == "unknown" {
@@ -152,6 +149,7 @@ func pbfObv(obv Json_out, last_point orb.Point, last_index int, i int) (processe
 	return o_out, last_index_out
 }
 
+//pbTrip processes trips after barefoot
 func pbTrip(trip []Json_out, ps string, fs string, tripid string) processedTrip {
 
 	tripout := processedTrip{
@@ -173,6 +171,7 @@ func pbTrip(trip []Json_out, ps string, fs string, tripid string) processedTrip 
 	return (tripout)
 }
 
+//postBarefoot processes batches of vehicle data after barefoot
 func postbarefoot(trips []trip_bf_out) []processedTrip {
 	var tripsout []processedTrip
 	for _, t := range trips {

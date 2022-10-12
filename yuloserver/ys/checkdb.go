@@ -5,7 +5,7 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
-//checks database to see if data already present
+
 var Sesh_config neo4j.SessionConfig
 
 func get_min_obv_time(obvs []obv) int64 {
@@ -20,6 +20,7 @@ func get_min_obv_time(obvs []obv) int64 {
 
 }
 
+//checkDatabaseDupe checks database to see if data already present for a given time range
 func checkDatabaseDupe(obvs []obv, max_prune int64) (bool, int64) {
 	id := obvs[0].id
 	//fmt.Printf("I have %s as an id\n", id)
@@ -78,6 +79,7 @@ func checkDatabaseDupe(obvs []obv, max_prune int64) (bool, int64) {
 
 }
 
+//prune_dupes removes data that is prior to a given time determined by checkDatabaseDupe
 func prune_dupes(obvs []obv, max_db_time int64) []obv {
 	//fmt.Printf("Pruning observations below %s\n", max_db_time)
 	var obvs_out []obv
@@ -90,6 +92,7 @@ func prune_dupes(obvs []obv, max_db_time int64) []obv {
 
 }
 
+//inc_zero_dt checks if any observations have the nil value 0 which indicates missing data (or, improbably, data from 1970-01-01 00:00:00)
 func inc_zero_dt(obvs []obv) bool {
 	for _, o := range obvs {
 		if o.datetime == 0 {
@@ -100,6 +103,7 @@ func inc_zero_dt(obvs []obv) bool {
 
 }
 
+//checkPriorStop finds either the stop that ended with the first observation in the batch of data, or the most recent stop
 func checkPriorStop(id string, end_time int64) string {
 
 	session := Db.NewSession(Sesh_config)
@@ -123,6 +127,7 @@ func checkPriorStop(id string, end_time int64) string {
 	}
 }
 
+//checkMostRecentStop finds a recent stop where none matches the time of the first observation
 func checkMostRecentStop(id string, end_time int64) string {
 
 	//this assumes you aren't adding data that dates prior to the data already in the database

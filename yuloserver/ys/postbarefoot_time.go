@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+//add_times_obv adds local datetimes to obseervations
 func add_times_obv(obv processedObv) processedObv {
 
 	olson := make(map[string]string)
@@ -33,6 +34,7 @@ func add_times_obv(obv processedObv) processedObv {
 
 }
 
+//timeIn performs conversion of datetime
 func timeIn(t time.Time, name string) (time.Time, error) {
 	loc, err := time.LoadLocation(name)
 	if err == nil {
@@ -41,6 +43,7 @@ func timeIn(t time.Time, name string) (time.Time, error) {
 	return t, err
 }
 
+//tsConvert returns datetime strings and integers for database upload
 func tsConvert(ts int64, tz string) (int64, string) {
 	dt := time.Unix(ts, int64(0))
 	dt_local, _ := timeIn(dt, tz)
