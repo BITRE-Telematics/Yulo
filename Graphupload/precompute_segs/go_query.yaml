@@ -1,5 +1,0 @@
---- # parameters for go query
-  start: 1546300800
-  finish: 9999999999999
-  speedsfile: "../../../Graphupload/precompute_segs/segspeeds.csv" #ie this dir as called from th queries dir
-  min_vol: 60

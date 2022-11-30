@@ -94,7 +94,7 @@ def format_tags(row, seg_upload):
 
 
 def writer(row, creds, args):
-  print(row)
+  #print(row)
   seg_upload = "MERGE(segment:Segment{\
                   osm_id: $osm_id\
                   })\
