@@ -1,0 +1,17 @@
+# Data read in
+Created Friday 27 April 2018
+
+All firms read in.r
+
+This collates the data from the providers into a common form. Each provider requires bespoke code as the formats and variable names differ. Furthermore, some providers, including , have provided excel formats that need to be manually edited. This will require ongoing work. The output is a single CSV file of all points. This can be collated with the residual data from the previous month
+
+Importantly time is transformed into a unix epoch time in seconds (ie seconds since 2017-01-01 not accounting for leap seconds), with another field preserving the (assumed) timezone. Most firms are using UMT, with some using AEST in May and some are unclear. I have deliberately left this issue to as late as possible in the process due to uncertainty. Geo overlays can be used at the point of analysis to transform a datetime into local time provided the timezone is known.
+ UPDATE 2018 see [timzeones.r](./Timezones.md)
+
+Each vehicle is given a unique id that is made up of the firm name concatenated with the unique identifier given the vehicle in the firm’s data. These are then hashed using the openssl::sha2() function. This ensures that vehicles will always have the same identifier in the processing whilst conforming with our need to deidentify data. Hashing the vehicle names also means we don’t need to maintain a local table associating vehicles with their deidentified ID. In the off chance we need to recover the processed data for a specific vehicle, we can just hash that vehicle again and recover processed data with the hashed ID. I have chosen not to add salt. A public salt would add no more security, since they'd have to be in the system. A unique salt would require a table for each vehicle and would only additionally prevent attacks when they know the vehicle names and the format of vehicle names, which is a very unlikely situation.
+
+Some data (writing as of 2017-11-06) also includes a HDOP field which is derived from the number and position of satellites. It is used to multiply the (unknown to us) precisions of devices. 
+Others provide booleans where data is invalid which is useful to avoid [Processing:Matching issues and errors:zero imputed speeds](../Processing/Matching_issues_and_errors/zero_imputed_speeds.md)
+
+Note that excluded information can be left in the collated CSV if we want to add it to the database. To avoid overly large CSVs it'd be best to create bespoke collated CSVs by firms containing the minimum variables and whatever other 
+

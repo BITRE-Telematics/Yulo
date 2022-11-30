@@ -1,0 +1,50 @@
+# add segments.py
+Created Wednesday 24 July 2019
+
+This script adds and updates road data from the [OpenStreetMap:Geofabrik.](./OpenStreetMap/Geofabrik..md) 
+Geofrabrik stores data in a tabular format for a small number of variables (name, osm_id, highway) which I slightly modidy and add speed_lim.
+
+The remainder of the the tags, which vary a great deal between segments, are stored in a long string called "other_tags" which is split and  modified by format_tags(). This has a large and increasing number of steps are new ways tag formatting can break [cypher](./Storage_of_processed_data/neo4j/cypher.md) syntax.
+
+--THE BELOW NOW IMPLEMENTED
+
+It- also includes a fairly clumsy way to prevent a "[cypher](./Storage_of_processed_data/neo4j/cypher.md) injection" by removing MATCH, DELETE and DETACH tags. The script is vulnerable because it doesn't parameterise these extra tags and a malicious actor with knowledge of the system could create a tag with these commands on an openstreetmap segment. 
+
+As such the script should be rewritten to add each tag to the query as a parameter and the tags to the row dictionary.
+
+for instance (untested) with format_tags() now taking row and seg_upload as arguments
+	tags_dict = {}
+	a = row['other_tags'].replace('"', '').split(',')
+	b = [x.replace('>', '"') + '"'  for x in a]
+	  c = [x for x in b if \
+	       'maxspeed' not in x and \
+	       '=' in x and \
+	       '4WD' not in x and \
+	       '4wd' not in x and \
+	       '2wd' not in x\
+	   ]
+	  if len(c) == 0:
+	    return None
+	  d = [sub('lanes="(\d)"', 'lanes=toInteger(\\1)', x) for x in c]
+	  e = [sub('"(yes|no)"', "toBoolean('\\1')", x) for x in d]
+	  f = [sub(':', '', x) for x in e]
+	  g = [sub('-', '_', x) for x in f]
+	  h = [sub(r'\\', "'", x) for x in g]
+	for tag in h:
+		t = t.split('=')
+		tags_dict[t[0]] = dict[1]
+		seg_upload = seg_upload + ', segment.%s={%s}' % (t[0], [t[0])
+	row = row.update(tags_dict)
+	return segupload, row
+		
+
+
+
+This still is potentially vulnerable to a malcious tag name tho. OSM convention is that tag names have no whitespace, as would (I think) be required for a malicious injection. As such, filtering out tags with whitespace might work.
+
+It can also optionally calculate the geodesic length of segments (this is time consuming) and geocode segments.
+
+I will likely add the geometry of the segments as an attribute in geojson format in future.
+
+The steps d and e also need to be moved into the seg_upload appendage in the for loop
+

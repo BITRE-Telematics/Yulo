@@ -1,0 +1,27 @@
+# SummaryStops
+Created Friday 27 April 2018
+
+This script has been replaced with summary_stops.py, with the clustering functions moved to [stop_cluster.py](./stopclustering.txt)
+
+SummaryStops.r
+This script determines clusters of stops defined by Tripgrouping.py to compare to defined truck stop locations. It uses the DBSCAN method to derive the clusters as, unlike other methods, including k-means, it does not require a pre-specified number of clusters. By default the dbscan::dbscan() function can take n variables and compute a Euclidean distance, but it can also accept a dist object created from a matrix. As such the script computes a matrix of n^2 great circle distances to pass to dbscan, where n is the number of stops. This is obviously computationally intensive but when run in parallel should not take long.
+
+A great disadvantage is the time taken increases exponentially as data increases. The script currently only looks for clusters within SA2s, but I have just (2018-07-26) added code to restrict this to calendar month as well (which makes sense given temporal as well as spatial clustering is important). Depending on how this scales this could be cut down more or it could be done on the fly from the database.
+
+This dbscan() function also requires an epsilon parameter (eps) representing the reachability distance. This will need to be felt out based on results desired. For instance, an eps of 400 (metres) had the effect of combining what on examination where stops at two difference locations in Laverton North. Two firms were visiting a single building on one side of the road, and one firm was visiting a building to the North a short distance away. However dbscan could not distinguish them. This is probably immaterial for the purposes of examining truck stops unless we want to determine, for instance, if trucks are parking adjacent to a truck stop instead of in it because it is full at certain times or they are using it in an unintended fashion, for instance parking on the opposite side of the road.
+
+In the Python version of the code the DBSCAN algorithm returns distance in radians which need to be adjusted using the circumference of an assumed spherical Earth.
+
+The Clustering may be moved out in future to another script so that an entire months worth of data is not required before processing. Then stops would be pulled from the database and processed later.
+
+
+The script can also return summary information about stop duration and the most popular times a stop at a cluster begins. Summary information can be run over subperiods if desired.
+Looking at the road data it is clear that some truck stops are being used, but no stops are being recorded at these locations. An example is Bungaree in Victoria where 56 trips have been matched to the rest area road, but no stops have been recorded. Some of these trips are potentially mis matches from the road matching algorithm, but others are likely to be rests that lasted shorter than an hour (probably toilet breaks). 
+
+We may need to have another definition of stops for the purpose of truck stop analysis, or request a list of sites of interest from the user. This is particularly true if the stop duration is low and there is no distinct road in the data, for instance the unpaved area NW of Lithgow where Black_153-69 takes place at the intersection of the GW and Castlereagh highways.
+
+Alternatively users can simply examine the road data.
+
+
+Note the function wday() returns weekday numbers starting at one for SUNDAY, not Monday as is the ISO standard.
+

@@ -1,0 +1,52 @@
+# GPS error
+Created Friday 27 April 2018
+
+This is a miscellany of errors where the algorithms have failed to account for inevitable GPS error.
+
+A  problem is occurring with segments that cross the median on dual carriageways, particularly on the Hume Highway, that vehicles are unlikely to be legally using except when accidents or roadworks require counterflow operations or if they are accessing the driveways of private properties situated next to the major road. These observations should be matched to the dual carriageways but may be being matched to the side road due to GPS error when there has been no emission in barefoot due to distance. This also happens when a subtrip has been recorded. Long distances between pings are more common when the vehicle is moving more quickly. In these instances the HMM starts again and merely matches to the nearest road. The number of pings matched to these segments is far less than the imputed observations indicating the error is occurring at an earlier ping matched to the wrong carriage way and subsequently requires a u turn to route to the other carriageway where GPS has been matched correctly. This also causes a lot of errors at offramps and streets used to reverse direction. It also can divert routing on to side streets, for example on the M4 around Parramatta and around Chadstone, I think. This is less likely with azimuth data but not all firms have it.
+
+This is tricker to solve. All these segments are tagged as “motorway_link” under highway; a tag shared with other important roads including on ramps and off ramps. There is no tag to identify these segments. Most of these (and roads that cross the median on dual carriageways) are named whereas the segments never are, however merely filtering out NULL values will also exclude many on ramps (especially in Perth) where OSM contributors have not provided a name. 
+
+There are options.
+
+One is just to filter out very short motorway_links when building the bf_map, however this may ruin network connectivity unnecessarily, particularly when surface roads join the dual carriageway. 
+
+Another is to filter only the ~64 motorway_link where there is no name AND they are not oneway. This would protect on ramps (which are tagged as oneway) and where surface roads cross the media (which are usually named). This would require extensive editing of bfmap.py and is vulnerable to excluding roads that have not been named for whatever reason.
+
+Another is to configure server.properties in barefoot to reduce the incidence of no emission events. This might be combine with later versions of barefoot which will eliminate the need for subtrips, or a more forgiving subtrip designation, or increasing the matcher distance and the maximum distance in Cich2ndPass() (whilst noting they should be equal to avoid timeout errors as described above). This will mean fewer observations at the beginning of chains and thus less matching errors.
+
+Finally, because these segments have very few recorded (that is actual pings as opposed to imputations) observations, generally less than 5, we can merely filter out two way highway_links with very few recordings after the fact. This will risk a handful of highway_links in tunnels that are not named as they will not record many observations and are sometimes unnamed (for instance 137373586) but these are few and we can edit OSM to name them (137373586 may have been named by the time you read this). We may also hope that traffic on each carriageway is equal and equally prone to error so the erroneous volumes on each cancel out.
+
+On the Pacific Highway North of Newcastle many vehicles are matched to named side roads that include the portion crossing the dual carriageway. These segments are long and named, although they usually have very few recordings. 
+
+Filtering out segments with just few recordings is not feasible because this would also lose information on tunnels. There is a tag “location” => “underground” which can be explicitly retained.
+
+Most of these options will cause some minor problems for analysis that uses the set of road segments used for trips. But this is for the future.
+
+Also consider using recording to trips ratio instead of absolute recording numbers. The erroneously matched roads tend to have several times as many trips as recordings.
+
+Any solution is likely to be imperfect but the underlying data can be altered in individual cases.
+UPDATE: In an effort to see if it was related to map connectivity errors I reclarssified all of these roads away from highway links. It hasn't worked and appears to be vehicles matched to the wrong side of the road. Hopefully this only occurs without azimuth.
+
+
+SIGMA
+
+The term matcher.sigma in server.properties is by default 7 (or 4.5 in more recent versions). Higher error should be expected around tall buildings or in deep cuttings. Barefoot's maintainers have reported increasing this to 8 fixes routing for the single example I gave them of [Chadstone.](./Unknown.md) I have tried increasing it to 15 to see if that helps, but we may need to apply different properties to different areas depending on how the error affects matching elsewhere. This might mean extracting all subtrips in [toJson.r](../toJSON.md) that pass through an SA4 and applying different properties.
+
+I have attempted downweighting segments to discourage their use via [probbo-roads.json](../Barefoot/probbo-roads.json.md) but this has been of limited success. This doesn't stop the initial mismatch onto an off ramp but does prevent routing onto alternate routes - unfortunately this usally means circling around the interchange to get back on the motorway.
+Another approach may be to indentify those problematic offramps (as in probbo-roads.json) and do a second matching run. This would be done by altering [postbarefoot.R](../postbarefoot.md) to identify when a given trip has been matched to a problematic offramp, and then refeed those trips to barefoot without the problematic ping. This would avoid routing that has a strong probability of offramp use attached to it.
+
+**SPECIFIC CASES**
+Mount Barker Rd Hillcrest Ave
+There are also a relatively large number of errors around Mount Barker for vehicle travelling along the South Eastern Freeway in South Australia. These include vehicles incorrectly routed by Mount Barker Road (eg 189631820) when points have erroneously been matched to the Devils Elbow offramp (10046627). The erroneous error seems to be because of a locally high GPS error caused by the steep cuttings in which the freeway runs. This will be difficult to remedy, although changing parameters may help. In this case it might be safe to just dismiss results or manually remove the incorrect roads from the map data. They are unimportant and there is a large amount of data retained for the freeway.
+
+Pacific Motorway/Highway
+
+There are similar issues with vehicles around Cowan travelling on the Motorway being routed to the old Highway which follows a very close alignment, probably aggravated by the high cutting walls.
+
+Misc Western Sydney (not exhaustive)
+
+23374886 is a segment near Milperra which has vehicles improperly matched to it with some frequently. The GPS observation is, indeed, on the segment. Notably all the vehicles that have been improperly matched are on routes that travel to or from Bankstown via Fairford road. This implies it might be a firm specific effect (I can't test this yet, I might have to add in the firm hash to the data again). If the firm's telematics are doing map matching it might be exagerating an arror.s
+
+
+
