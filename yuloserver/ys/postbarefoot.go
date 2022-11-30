@@ -38,6 +38,9 @@ type processedObv struct {
 	Lat            float64
 	Lon            float64
 	Forward        bool
+	Source_id      string
+	Source_frac    float64
+	Target_frac    float64
 }
 
 //processedTrip collects processed Trips
@@ -92,6 +95,9 @@ func pbfObv(obv Json_out, last_point orb.Point, last_index int, i int) (processe
 		Lat:           obv.Lat,
 		Lon:           obv.Lon,
 		Forward:       obv.Forward,
+		Target_frac:   obv.Target_frac,
+		Source_id:     obv.Source_id,
+		Source_frac:   obv.Source_frac,
 	}
 
 	if o_out.Osm_id == "" {

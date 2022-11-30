@@ -4,9 +4,10 @@ import (
 	"fmt"
 	//"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
+
 // upload_veh data adds vehicle firm and type to the database
 func upload_veh_data(id string, veh_type string, firm string) {
-	//fmt.Println("Adding vehicle info")
+	fmt.Println("Adding vehicle info %s %s %s", id, veh_type, firm)
 	session := Db.NewSession(Sesh_config)
 
 	defer session.Close()
@@ -37,18 +38,27 @@ func upload_veh_data(id string, veh_type string, firm string) {
 		label = "Trailer"
 	}
 	//we can potentially end up with mislabeled assets where trailers are initially unknown.
-	statement2 := fmt.Sprintf("MERGE(a:Asset{id: $ID}) WITH a WHERE LENGTH(LABELS(a)) < 2 SET a:%s", label)
+	statement2 := fmt.Sprintf(`
+		MERGE(a:Asset{id: $ID}) 
+		WITH a 
+		WHERE SIZE(LABELS(a)) < 2 
+		SET a:%s RETURN a.id
+		`,
+		label)
 	parameters2 := map[string]interface{}{
 		"ID": id,
 	}
 
 	result2, err := session.Run(statement2, parameters2)
 	if err != nil {
-		fmt.Print("Add veh data error")
+		fmt.Println("Add veh data error")
+		fmt.Println(err)
 	}
-	if result2.Err() != nil {
-		fmt.Print("Add veh data error")
-		fmt.Println(result.Err())
+	if result2 != nil {
+		if result2.Err() != nil {
+			fmt.Println("Add veh data labels error")
+			fmt.Println(result.Err())
+		}
 	}
 
 }

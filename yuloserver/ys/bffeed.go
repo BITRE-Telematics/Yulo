@@ -14,6 +14,7 @@ import (
 	//"unicode/utf8"
 	"strings"
 )
+
 //Current_OS is set to Windows if yuloserver is running on windows to ensure is_func uses the current command line utlity
 var Current_OS string
 
@@ -33,6 +34,7 @@ type imp_obv struct {
 	Target          string  `json:"target"`
 	Forward         bool    `json:"forward"`
 }
+
 //Json_out holds an observation output from barefoot along with retained data from the input
 type Json_out struct {
 	Datetime        int64   `json:"datetime"`
@@ -46,6 +48,9 @@ type Json_out struct {
 	Length        float64   `json:"length"`
 	SA2           string    `json:"sa2"`
 	GCC           string    `json:"gcc"`
+	Source_frac   float64   `json:"source_frac"`
+	Source_id     string    `json:"source_id"`
+	Target_frac   float64   `json:"target_frac"`
 	Newsubtrip    bool
 	Lat           float64
 	Lon           float64
@@ -217,7 +222,7 @@ func to_json(t trip) []string {
 	return cmds
 }
 
-//merge_orig merges barefoot data with the original data to retain data such as lat, lon and speed, and 
+//merge_orig merges barefoot data with the original data to retain data such as lat, lon and speed, and
 //retains observations that were not matched by barefoot
 func merge_orig(trip trip, matched_trip []Json_out) trip_bf_out {
 	var left_overs []Json_out

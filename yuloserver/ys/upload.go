@@ -143,6 +143,7 @@ func stopswrite(stops []processedStop, id string, i int) {
 	}
 
 }
+
 //writeObv stores data on an observation formatted for writing to the database
 type writeObv struct {
 	OSM_ID         string
@@ -162,6 +163,9 @@ type writeObv struct {
 	TRIP           string
 	IMP_OBVS       []string
 	FORWARD        bool
+	TARGET_FRAC    float64
+	SOURCE_ID      string
+	SOURCE_FRAC    float64
 }
 
 //to_string formats a float to a string provided it is higher than a value that indicates missing data, 0 or 1 depending on the variable
@@ -261,6 +265,9 @@ func to_writeObv(obv processedObv, id string, trip string) writeObv {
 		TYPE:           o_type,
 		FORWARD:        obv.Forward,
 		STE:            obv.STE,
+		TARGET_FRAC:    obv.Target_frac,
+		SOURCE_ID:      obv.Source_id,
+		SOURCE_FRAC:    obv.Source_frac,
 	}
 
 	var imp_obv_str []string
@@ -327,25 +334,45 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 			ste: o.STE
 		})
 		WITH *
-		WHERE o.OSM_ID <> "unknown"
 		
+		
+		MERGE (trip)-[:OBSERVED_AT]->(observation)
+
+		
+		WITH observation, o
+		WHERE o.OSM_ID <> "unknown" AND o.OSM_ID <> ""
 		MERGE (segment:Segment{
 			osm_id: o.OSM_ID
 			})
 
-		CREATE (trip)-[:OBSERVED_AT]->(observation)
 		
 		CREATE (observation)-[on:ON]->(segment) 
-		SET on.type = o.TYPE, on.forward = toBoolean(o.FORWARD)
+
+		SET on.type = o.TYPE, on.forward = toBoolean(o.FORWARD), on.frac = o.TARGET_FRAC
 		
-		WITH observation, o, segment
+		WITH observation, o
 		UNWIND o.IMP_OBVS as impobvs
 		MERGE(impseg:Segment{osm_id: split(impobvs, '$')[0] })
 		CREATE (observation)-[imp_on:ON]->(impseg)
 		SET imp_on.type = 'imputed', imp_on.forward = toBoolean(split(impobvs, '$')[1])
+
+		
+
+		WITH observation, o
+		MATCH (source:Segment{
+			osm_id: o.SOURCE_ID
+			})
+
+		MERGE (source)<-[son:ON]-(observation)
+		SET son.source = toBoolean('true'), son.frac = o.SOURCE_FRAC
+
+		WITH o, son
+		WHERE son.type IS NULL
+		SET son.type = "source"
 		
 		
-		RETURN segment.osm_id
+
+		RETURN o.OSM_ID
 
 			`
 

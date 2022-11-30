@@ -45,7 +45,7 @@ func readCsvRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, op
 
 	compressed := strings.Contains(fn, ".gz")
 
-	obvs := readCsv(file, false, compressed)
+	obvs := readCsv(file, true, compressed)
 	opts := opts{
 		gen_resids_only: gen_resids_only,
 		prune_dupes:     prune_dupes,
@@ -170,6 +170,7 @@ func append_veh_map(m map[string][]obv, o obv) (map[string][]obv, bool) {
 	_, ok := m[o.id]
 	if ok {
 		m[o.id] = append(m[o.id], o)
+
 	} else {
 		var n []obv
 		//fmt.Println(m[o.id])
