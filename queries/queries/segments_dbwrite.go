@@ -18,7 +18,7 @@ func bd_query_builder(Bd_type string, direction bool) string {
 
 	statement := `
                  MATCH (s:Segment{osm_id: $OSM_ID})<-[oa:ON]-(o:Observation)<-[:OBSERVED_AT]-(t:Trip)<-[:EMBARKED_ON]-(v:Asset)
-	              WHERE o.datetime > $START AND o.datetime < $FINISH AND o.datetimedt IS NOT NULL
+	              WHERE o.datetime > $START AND o.datetime < $FINISH AND o.datetimedt IS NOT NULL AND oa.type <> "source"
 	              WITH s, o, t, v, oa
                   RETURN  
                   s.osm_id as osm_id,

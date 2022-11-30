@@ -34,22 +34,24 @@ func batch_query_length(batch_id string, c chan []string, onExit func(), ind int
 
 	defer onExit()
 	act_data := Act_length_query(batch_id, 1)
-	for act_data.Next() {
+	for _, rec := range act_data {
 		//wg.Add(1)
 
 		l := []string{
-			stringGet(act_data.Record(), "vehicle"), //vehicle
-			unspecifiedNumFrmt(act_data.Record(), "sum_length"),
-			strconv.FormatInt(intGet(act_data.Record(), "month"), 10), //month
-			strconv.FormatInt(intGet(act_data.Record(), "day"), 10),   //day
-			stringGet(act_data.Record(), "state"),                     //state
+			stringGet(rec, "vehicle"), //vehicle
+			unspecifiedNumFrmt(rec, "sum_length"),
+			strconv.FormatInt(intGet(rec, "month"), 10), //month
+			strconv.FormatInt(intGet(rec, "day"), 10),   //day
+			stringGet(rec, "state"),                     //state
+			unspecifiedNumFrmt(rec, "n_seg"),
 		}
-
+		//fmt.Println(l)
 		c <- l
 
 	}
-	if ind%100 == 0 {
+	if ind%1 == 0 {
 		fmt.Println(ind)
+		fmt.Println(time.Now())
 	}
 
 }
@@ -58,40 +60,51 @@ func batch_query_usage(batch_id string, c chan []string, onExit func(), ind int)
 
 	defer onExit()
 	act_data := Act_usage_query(batch_id, 1)
-	for act_data.Next() {
+
+	for _, rec := range act_data {
 		//wg.Add(1)
 		l := []string{
-			stringGet(act_data.Record(), "vehicle"),                        //vehicle
-			strconv.FormatInt(intGet(act_data.Record(), "start_time"), 10), //start_time
-			strconv.FormatInt(intGet(act_data.Record(), "end_time"), 10),   //end_time
-			strconv.FormatInt(intGet(act_data.Record(), "month"), 10),      //month
-			strconv.FormatInt(intGet(act_data.Record(), "day"), 10),        //day
-			stringGet(act_data.Record(), "sa2"),                            //sa2
+			stringGet(rec, "vehicle"),                        //vehicle
+			strconv.FormatInt(intGet(rec, "start_time"), 10), //start_time
+			strconv.FormatInt(intGet(rec, "end_time"), 10),   //end_time
+			strconv.FormatInt(intGet(rec, "month"), 10),      //month
+			strconv.FormatInt(intGet(rec, "day"), 10),        //day
+			stringGet(rec, "sa2"),                            //sa2
 		}
-
+		//fmt.Println(l)
 		c <- l
 
 	}
 	if ind%100 == 0 {
 		fmt.Println(ind)
+		fmt.Println(time.Now())
 	}
 
 }
 
-func Act_length_query(id string, i int) neo4j.Result {
+func Act_length_query(id string, i int) []*neo4j.Record {
 	//res := ActLength{}
 
 	statement := `MATCH(v:Asset{id:$VEH})-[:EMBARKED_ON]->(Trip)-[:OBSERVED_AT]->(o:Observation)-[on:ON]->(s:Segment)
-       			  WHERE (on.type <> 'imputed' OR on.type IS NULL) AND o.datetimedt.year = $YEAR %s 
+       			  WHERE (on.type <> 'imputed' OR on.type <> 'source' OR on.type IS NULL) AND o.datetimedt.year = $YEAR %s 
       			  RETURN
       			   v.id as vehicle,
-      			   sum(o.length) as sum_length,
+      			   sum(distinct(o.length)) as sum_length,
       			   o.datetimedt.month as month,
       			   o.datetimedt.day as day,
-      			   left(s.sa2, 1) as state
+      			   s.osm_id as osm_id
                  `
 	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
-	fabric_suffix := "} RETURN vehicle, sum_length, month, day, state"
+	fabric_suffix := `} 
+						WITH sum_length, month, day, osm_id, vehicle
+						UNWIND osm_id as id 
+						CALL{
+							USE %s WITH id 
+							MATCH(ss:Segment) WHERE ss.osm_id = id RETURN left(ss.sa2, 1) as state
+						}
+						RETURN vehicle, sum(sum_length) as sum_length, month, day, state, count(osm_id) as n_seg
+						`
+	fabric_suffix = fmt.Sprintf(fabric_suffix, Seg_db)
 	var parameters map[string]interface{}
 	if (Month > 0) && (Month < 13) {
 		//str_month := strconv.FormatInt(Month, 10)
@@ -107,33 +120,30 @@ func Act_length_query(id string, i int) neo4j.Result {
 	session := Db.NewSession(Sesh_config)
 
 	statement = fabric_prefix + statement + fabric_suffix
+
 	defer session.Close()
 	result, err := session.Run(statement, parameters)
-	if err != nil && i < 5 {
-		if (i%5 == 0) || (i == 0) {
-			fmt.Println(err, id, i)
-			err_c <- []string{
-				id,
-				err.Error(),
-			}
+	//fmt.Println(err)
+	result_, _ := result.Collect()
+	if err != nil {
+
+		fmt.Println(err, id, i)
+		err_c <- []string{
+			id,
+			err.Error(),
 		}
 		time.Sleep(time.Millisecond * 1000 * time.Duration(i))
-		result = Act_length_query(id, i+1)
+		result_ = Act_length_query(id, i+1)
 	}
-	if result.Err() != nil {
-		fmt.Println(result.Err())
-		return nil
-	}
-	//fmt.Print(id, ":", res)
-	//fmt.Print(res.N)
-	return result
+
+	return result_
 }
 
-func Act_usage_query(id string, i int) neo4j.Result {
+func Act_usage_query(id string, i int) []*neo4j.Record {
 
-	statement := `MATCH(v:Asset{id: $veh })-[:STOPPED_AT]->(s:Stop)
-			      			   WHERE s.end_timedt.year = $year
-			      			   AND s.end_time - s.start_time > $mindur
+	statement := `MATCH(v:Asset{id:$VEH})-[:STOPPED_AT]->(s:Stop)
+			      			   WHERE s.end_timedt.year = $YEAR
+			      			   AND s.end_time - s.start_time > $MINDUR
 			      			   RETURN v.id as vehicle,
 			      			    s.start_time as start_time,
 			      			    s.end_time as end_time,
@@ -148,33 +158,34 @@ func Act_usage_query(id string, i int) neo4j.Result {
 	//fmt.Println(Year)
 	//fmt.Println(MinDur)
 	statement = fabric_prefix + statement + fabric_suffix
+	//fmt.Println(statement)
 	parameters := map[string]interface{}{
-		"veh":    id,
-		"year":   Year,
-		"mindur": MinDur,
+		"VEH":    id,
+		"YEAR":   Year,
+		"MINDUR": MinDur,
 	}
+	//fmt.Println(parameters)
 	session := Db.NewSession(Sesh_config)
 
 	defer session.Close()
 
 	result, err := session.Run(statement, parameters)
-
-	if err != nil && i < 5 {
-		if (i%5 == 0) || (i == 0) {
-			fmt.Println(err, id, i)
-			err_c <- []string{
-				id,
-				err.Error(),
-			}
+	result_, _ := result.Collect()
+	if err != nil {
+		fmt.Println(err)
+		err_c <- []string{
+			id,
+			err.Error(),
 		}
 		time.Sleep(time.Millisecond * 1000 * time.Duration(i))
-		result = Act_usage_query(id, i+1)
+		result_ = Act_usage_query(id, i+1)
 	}
 	if result.Err() != nil {
 		fmt.Println(result.Err())
 		return nil
 	}
-	return result
+
+	return result_
 }
 
 func Act_write(filename string, resume bool) {
@@ -214,7 +225,7 @@ func Act_write(filename string, resume bool) {
 
 	if resume {
 
-		//file, _ := os.OpenFile(filename, os.O_RDWR, 0755)
+		file, _ = os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0644)
 		//defer file.Close()
 		fmt.Println("Finding undone vehicles")
 		csvr := csv.NewReader(file)
@@ -291,6 +302,7 @@ func Act_write(filename string, resume bool) {
 			"month",
 			"day",
 			"state",
+			"n_seg",
 		}
 		//fmt.Println(Month)
 	}

@@ -1,5 +1,6 @@
 package queries
 
+//THIS HAS NOT BEEN UPDATED TO COLLECT RESULTS
 import (
 	"encoding/csv"
 	"fmt"
