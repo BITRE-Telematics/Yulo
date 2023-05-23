@@ -50,6 +50,12 @@ func main() {
 	}
 	queries.Sesh_config = sesh_config
 
+	sesh_config_segs := neo4j.SessionConfig{
+		DatabaseName: creds.Segs_db,
+	}
+	queries.Sesh_config_segs = sesh_config_segs
+	fmt.Println(sesh_config_segs)
+
 	if err != nil {
 		fmt.Printf("Error %v", err)
 	}

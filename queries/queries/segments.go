@@ -111,7 +111,7 @@ func Seg_speedquery(osm_id string, i int, direction bool) neo4j.Result {
                   count(distinct(t)) as n_trips,
                   count(distinct(v)) as n_vehicles
                  `
-	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g) "
 	fabric_suffix := "} RETURN osm_id, LQ_imp, Median_imp, UQ_imp, stDev_imp, n_obvs, n_trips, n_vehicles"
 	if Bd_type != "" {
 		statement = statement + fmt.Sprintf(`, o.datetimedt.%[1]s as %[1]s`, Bd_type)
@@ -123,8 +123,8 @@ func Seg_speedquery(osm_id string, i int, direction bool) neo4j.Result {
 			`
 	                        , s.forward as direction,
                              CASE 
-                             WHEN o.forward IS NOT NULL
-                             THEN o.forward
+                             //WHEN o.forward IS NOT NULL
+                             //THEN o.forward
                              WHEN oa.forward IS NULL
                              THEN abs(s.forward - o.azimuth) < 90 OR abs(s.forward - o.azimuth) > 270
                              ELSE 

@@ -16,7 +16,7 @@ if __name__ == "__main__":
 	parser.add_argument("-pd", "--prune_dupes", type = str, default = "true",
 		help="whether to exclude observations after data already in database")
 	parser.add_argument("-mp", "--max_prune", type = int, default = 0,
-		help="datetime in UNIX epoch maximum duplicate data allowed. Default 0 means whatever the maximum data in database")
+		help="datetime in UNIX epoch maximum duplicate data checked for. Default 0 means whatever the maximum data in database")
 	parser.add_argument("-rfs", "--drop_first_stop", type = str, default = "false",
 		help="whether drop the first stop-trip pair to residuals to be captured by prior data processed later")
 

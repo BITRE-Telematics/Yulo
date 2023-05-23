@@ -1,0 +1,6 @@
+--- # parameters for go query
+  start: 1640995200
+  finish: 1672531200
+  speedsfile: "output/segvols.csv"
+  min_vol: 60
+  max_routines: 15

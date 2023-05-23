@@ -15,10 +15,13 @@ import (
 
 //Addr_tree stores an r tree of addresses to be matched to
 var Addr_tree *kdtree.KDTree
+
 //Ra_tree stores an r tree of rest area locations to be matched to
 var Ra_tree *kdtree.KDTree
+
 //Loc_ra contains rest area locations
 var Loc_ra []loc
+
 //Loc_addr contains address locations
 var Loc_addr []loc
 
@@ -45,7 +48,7 @@ func get_locs(loc_type string) []loc {
 	loc_cypher := `
 	 MATCH (l:%s)
 	 WHERE l.lat IS NOT NULL AND l.lat <0
-	 RETURN l.lat as lat, l.lon as lon, l.id as loc_id`
+	 RETURN l.lat as lat, l.lon as lon, toString(l.id) as loc_id`
 	loc_cypher = fmt.Sprintf(loc_cypher, loc_type)
 	//fmt.Println("Running query")
 	locquery, err := session.Run(loc_cypher,
@@ -66,6 +69,7 @@ func get_locs(loc_type string) []loc {
 
 	var loc loc
 	for locquery.Next() {
+		//fmt.Println(locquery.Record().GetByIndex(2))
 		loc.lat = locquery.Record().GetByIndex(0).(float64)
 		loc.lon = locquery.Record().GetByIndex(1).(float64)
 		loc.id = locquery.Record().GetByIndex(2).(string)

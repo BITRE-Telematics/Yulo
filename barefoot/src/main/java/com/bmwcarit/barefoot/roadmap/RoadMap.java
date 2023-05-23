@@ -13,6 +13,9 @@
 package com.bmwcarit.barefoot.roadmap;
 
 import java.io.Serializable;
+import java.io.PrintStream;
+import java.io.FileOutputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -134,7 +137,7 @@ public class RoadMap extends Graph<Road> implements Serializable {
         logger.info("inserting roads ...");
 
         RoadMap roadmap = new RoadMap();
-
+        new File("azis.csv").delete();
         int osmcounter = 0, counter = 0;
         BaseRoad road = null;
         while ((road = reader.next()) != null) {
@@ -144,9 +147,10 @@ public class RoadMap extends Graph<Road> implements Serializable {
                 counter += 1;
                 roadmap.add(uni);
             }
-
+            try(PrintStream ps = new PrintStream(new FileOutputStream("aziscsv", true))){ps.append(road.refid() + "," + road.med_azi() + "\n");} catch(Exception e){e.getStackTrace();}
             if (osmcounter % 100000 == 0) {
                 logger.info("inserted {} ({}) roads", osmcounter, counter);
+                //logger.info("azi is {}", road.med_azi());
             }
         }
 

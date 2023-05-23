@@ -19,6 +19,7 @@ var Act_type string
 var err_c chan []string
 var Db neo4j.Driver
 var Sesh_config neo4j.SessionConfig
+var Sesh_config_segs neo4j.SessionConfig
 var Max_routines int64
 
 type Cred_struct struct {

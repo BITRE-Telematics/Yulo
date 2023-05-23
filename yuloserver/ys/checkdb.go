@@ -5,8 +5,8 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
-
 var Sesh_config neo4j.SessionConfig
+var Sesh_config_fabric neo4j.SessionConfig
 
 func get_min_obv_time(obvs []obv) int64 {
 	min := obvs[0].datetime
@@ -26,19 +26,19 @@ func checkDatabaseDupe(obvs []obv, max_prune int64) (bool, int64) {
 	//fmt.Printf("I have %s as an id\n", id)
 	min_dt := get_min_obv_time(obvs)
 	//fmt.Printf("I have %s as a dt\n", min_dt)
-	session := Db.NewSession(Sesh_config)
+	session := Db.NewSession(Sesh_config_fabric)
 
 	defer session.Close()
 	statement := ""
 	if max_prune == 0 {
-		statement = "USE " + Creds.Fabric + " UNWIND " + Creds.Fabric + ".graphIds() AS graphId CALL {USE " + Creds.Fabric + ".graph(graphId) " +
+		statement = " UNWIND " + "graph.names() AS g CALL {USE " + "graph.byName(g) " +
 			`
 		MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop)
 		RETURN max(s.end_time_utc) as max
 	 ` +
 			"} RETURN max(max) as max"
 	} else {
-		statement = "USE " + Creds.Fabric + " UNWIND " + Creds.Fabric + ".graphIds() AS graphId CALL {USE " + Creds.Fabric + ".graph(graphId) " +
+		statement = " UNWIND " + "graph.names() AS g CALL {USE " + "graph.byName(g) " +
 			`
 		MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop)
 		WHERE s.end_time_utc <= $MAX_PRUNE
@@ -106,17 +106,23 @@ func inc_zero_dt(obvs []obv) bool {
 //checkPriorStop finds either the stop that ended with the first observation in the batch of data, or the most recent stop
 func checkPriorStop(id string, end_time int64) string {
 
-	session := Db.NewSession(Sesh_config)
+	session := Db.NewSession(Sesh_config_fabric)
 
 	defer session.Close()
 
-	statement := "USE " + Creds.Fabric + " UNWIND " + Creds.Fabric + ".graphIds() AS graphId CALL {USE " + Creds.Fabric + ".graph(graphId) " +
+	statement := " UNWIND " + "graph.names() AS g CALL {USE " + "graph.byName(g) " +
 		"MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop{end_time_utc:$END_TIME}) RETURN s.id as id" +
 		"} RETURN id as id"
+	//fmt.Println(statement)
 	parameters := map[string]interface{}{"ID": id, "END_TIME": end_time}
 	ps_res, err := session.Run(statement, parameters)
 	if err != nil {
 		fmt.Print("Check database error")
+	}
+	if ps_res != nil {
+		if ps_res.Err() != nil {
+			fmt.Println(ps_res.Err())
+		}
 	}
 	if ps_res.Next() {
 		return ps_res.Record().GetByIndex(0).(string)
@@ -133,7 +139,7 @@ func checkMostRecentStop(id string, end_time int64) string {
 	//this assumes you aren't adding data that dates prior to the data already in the database
 	//A WHERE max < $END_TIME could account for this but the query does not work properly
 	//In this instance use a script to correct the connections
-	session := Db.NewSession(Sesh_config)
+	session := Db.NewSession(Sesh_config_fabric)
 
 	defer session.Close()
 	/*statement := `
@@ -144,14 +150,14 @@ func checkMostRecentStop(id string, end_time int64) string {
 	  RETURN ss.id as id, ss.end_time_utc as end_time
 	 `*/
 	statement :=
-		"USE " + Creds.Fabric + " UNWIND " + Creds.Fabric + ".graphIds() AS graphId CALL { USE " + Creds.Fabric + ".graph(graphId) " +
+		" UNWIND " + "graph.names() AS g CALL {USE " + "graph.byName(g) " +
 			`
                   MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop)
                   WHERE s.end_time_utc < $END_TIME
                   RETURN max(s.end_time_utc) as max_time
               }
-              WITH graphId, max(max_time) as max_time_  CALL { USE ` +
-			Creds.Fabric + ".graph(graphId) WITH max_time_" +
+              WITH g, max(max_time) as max_time_  CALL { USE ` +
+			"graph.byName(g) WITH max_time_" +
 			`
                   MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(ss:Stop{end_time_utc:max_time_})
                   RETURN ss.id as id, ss.end_time_utc as end_time

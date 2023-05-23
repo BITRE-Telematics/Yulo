@@ -86,11 +86,16 @@ func main() {
 		),
 	)
 	defer db.Close()
-	//naming database in neo4j4
+	//naming database in neo4j5
 	sesh_config := neo4j.SessionConfig{
 		DatabaseName: creds.Db_name,
 	}
 	ys.Sesh_config = sesh_config
+
+	sesh_config_fabric := neo4j.SessionConfig{
+		DatabaseName: creds.Fabric,
+	}
+	ys.Sesh_config_fabric = sesh_config_fabric
 
 	if err != nil {
 		fmt.Printf("Error %v", err)

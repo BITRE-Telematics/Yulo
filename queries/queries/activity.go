@@ -86,21 +86,22 @@ func Act_length_query(id string, i int) []*neo4j.Record {
 	//res := ActLength{}
 
 	statement := `MATCH(v:Asset{id:$VEH})-[:EMBARKED_ON]->(Trip)-[:OBSERVED_AT]->(o:Observation)-[on:ON]->(s:Segment)
-       			  WHERE (on.type <> 'imputed' OR on.type <> 'source' OR on.type IS NULL) AND o.datetimedt.year = $YEAR %s 
+       			  WHERE (on.type <> 'imputed' or on.type <> 'source' OR on.type IS NULL) AND o.datetimedt.year = $YEAR %s 
+      			  with v, o, s, collect(distinct o) as oo
       			  RETURN
       			   v.id as vehicle,
-      			   sum(distinct(o.length)) as sum_length,
+      			   sum(o.length) as sum_length,
       			   o.datetimedt.month as month,
       			   o.datetimedt.day as day,
       			   s.osm_id as osm_id
                  `
-	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g) "
 	fabric_suffix := `} 
 						WITH sum_length, month, day, osm_id, vehicle
 						UNWIND osm_id as id 
 						CALL{
 							USE %s WITH id 
-							MATCH(ss:Segment) WHERE ss.osm_id = id RETURN left(ss.sa2, 1) as state
+							OPTIONAL MATCH(ss:Segment) WHERE ss.osm_id = id RETURN left(ss.sa2, 1) as state
 						}
 						RETURN vehicle, sum(sum_length) as sum_length, month, day, state, count(osm_id) as n_seg
 						`
@@ -120,7 +121,7 @@ func Act_length_query(id string, i int) []*neo4j.Record {
 	session := Db.NewSession(Sesh_config)
 
 	statement = fabric_prefix + statement + fabric_suffix
-
+	//fmt.Println(statement)
 	defer session.Close()
 	result, err := session.Run(statement, parameters)
 	//fmt.Println(err)
@@ -152,7 +153,7 @@ func Act_usage_query(id string, i int) []*neo4j.Record {
 			      			    s.sa2 as sa2
 
 			      			   `
-	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g)  "
 	fabric_suffix := "} RETURN vehicle, start_time, end_time, month, day, sa2"
 	//fmt.Println(id)
 	//fmt.Println(Year)
@@ -200,11 +201,11 @@ func Act_write(filename string, resume bool) {
 
 	defer session.Close()
 
-	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_prefix := "USE fabric UNWIND graph.names() AS g CALL {USE graph.byName(g) "
 	fabric_suffix := "} RETURN distinct(id)"
 	id_q := "MATCH(v:Asset) RETURN v.id as id"
 	id_q = fabric_prefix + id_q + fabric_suffix
-
+	fmt.Println(id_q)
 	idquery, err := session.Run(id_q, map[string]interface{}{})
 
 	if err != nil {

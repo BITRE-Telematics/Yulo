@@ -128,7 +128,7 @@ func batch_query_write_dir(seg_data []*neo4j.Record, Bd_type string) {
 
 func write_segs_db(data map[string]interface{}, Bd_type string, direction bool) {
 
-	session := Db.NewSession(Sesh_config)
+	session := Db.NewSession(Sesh_config_segs)
 
 	defer session.Close()
 	var statement string

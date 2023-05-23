@@ -1,0 +1,5 @@
+creds_parameters
+go.sum
+go.mod
+*.csv
+*.tar

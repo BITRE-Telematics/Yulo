@@ -18,8 +18,9 @@ func bd_query_builder(Bd_type string, direction bool) string {
 
 	statement := `
                  MATCH (s:Segment{osm_id: $OSM_ID})<-[oa:ON]-(o:Observation)<-[:OBSERVED_AT]-(t:Trip)<-[:EMBARKED_ON]-(v:Asset)
-	              WHERE o.datetime > $START AND o.datetime < $FINISH AND o.datetimedt IS NOT NULL AND oa.type <> "source"
-	              WITH s, o, t, v, oa
+	              WHERE o.datetime > $START AND o.datetime < $FINISH AND o.datetimedt IS NOT NULL 
+	              AND oa.type IN ['matched path', 'matched no path']
+	              WITH s, o, t, v, oa, collect(distinct(o)) as oo
                   RETURN  
                   s.osm_id as osm_id,
                   o.imputed_speed as imputed_speed,
@@ -27,7 +28,7 @@ func bd_query_builder(Bd_type string, direction bool) string {
                   count(distinct(t)) as n_trips,
                   count(distinct(v)) as n_vehicles
                  `
-	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g) "
 	fabric_suffix := `} RETURN osm_id,
 							   percentileCont(imputed_speed, 0.25) as LQ_imp,
 							   percentileCont(imputed_speed, 0.50) as Median_imp,
@@ -46,8 +47,8 @@ func bd_query_builder(Bd_type string, direction bool) string {
 			`
 	                        , s.forward as direction,
                              CASE 
-                             WHEN o.forward IS NOT NULL
-                             THEN o.forward
+                             //WHEN o.forward IS NOT NULL
+                             //THEN o.forward
                              WHEN oa.forward IS NULL
                              THEN abs(s.forward - o.azimuth) < 90 OR abs(s.forward - o.azimuth) > 270
                              ELSE 
@@ -116,8 +117,9 @@ func Seg_speedquery_full(osm_id string) []string {
 	//on database restucture change to "count(a) as n_obvs and sum(size([x IN oa.type WHERE x <> 'imputed'])) as rec_obvs"
 	statement := `
                  MATCH (s:Segment{osm_id: $OSM_ID})<-[oa:ON]-(o:Observation)<-[OBSERVED_AT]-(t:Trip)<-[:EMBARKED_ON]-(v:Asset)
-	              WHERE o.datetime > $START AND o.datetime < $FINISH AND o.datetimedt IS NOT NULL
-	              WITH s, o, t, v, oa
+	              WHERE o.datetime > $START AND o.datetime < $FINISH AND o.datetimedt IS NOT NULL 
+	              AND oa.type IN ['matched path', 'matched no path']
+	              WITH s, o, t, v, oa,  collect(distinct(o)) as oo
                   RETURN  
                   s.osm_id as osm_id,
                   o.imputed_speed as imputed_speed,
@@ -126,7 +128,7 @@ func Seg_speedquery_full(osm_id string) []string {
                   count(distinct(t)) as n_trips,
                   count(distinct(v)) as n_vehicles
                  `
-	fabric_prefix := "UNWIND " + Fabric + ".graphIds() AS graphId CALL {USE " + Fabric + ".graph(graphId) "
+	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g) "
 	fabric_suffix := `
 						} RETURN osm_id,
 						percentileCont(imputed_speed, 0.25) as LQ_imp,
@@ -189,11 +191,11 @@ func Seg_write_db(filename string, resume bool, speedfile_nm string) {
 
 	fmt.Println("Getting segment list")
 
-	session := Db.NewSession(Sesh_config)
+	session := Db.NewSession(Sesh_config_segs)
 
 	defer session.Close()
 
-	seg_q := fmt.Sprintf("USE %s MATCH(s:Segment) WHERE s.osm_id <> 'nan' RETURN s.osm_id as osm_id ", Seg_db)
+	seg_q := fmt.Sprintf("MATCH(s:Segment) WHERE s.osm_id <> 'nan' RETURN s.osm_id as osm_id ")
 
 	results, err := session.Run(seg_q, map[string]interface{}{})
 
