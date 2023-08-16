@@ -9,10 +9,13 @@ import (
 	"sort"
 	"time"
 )
+
 //DB represents a global database connection object
 var Db neo4j.Driver
+
 //Params are global parameters
 var Params Para
+
 // Guard is a channel to limit the number of concurrent processes
 var Guard chan struct{}
 
@@ -21,7 +24,7 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println(r.Header.Get("filename"))
 	//fmt.Print(Params)
 	start := time.Now()
-	obvs_map, opts := readCsvRequest(*r, w)
+	obvs_map, opts := readRequest(*r, w)
 	if opts.gen_resids_only {
 		fmt.Println("Generating residuals only")
 	}

@@ -1,0 +1,32 @@
+syntax = "proto3";
+package yulo;
+
+option go_package = "ys";
+
+
+message Point {
+  double lon = 1;
+  double lat = 2;
+  
+}
+
+message Observation{
+  int64 datetime   = 1;
+  Point location   = 2;
+  int64 speed   = 3;
+  int64 azimuth = 4;
+}
+
+message Vehicle{
+  string id   = 1;
+  string firm = 2; //this could go in the Batch
+  string type = 3;
+}
+
+message VehicleTrace{
+  Vehicle vehicle = 1;
+  repeated Observation observations = 2; }
+
+message Batch{
+  repeated VehicleTrace traces = 1;
+}

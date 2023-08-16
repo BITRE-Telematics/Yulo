@@ -5,8 +5,12 @@ import (
 	"compress/gzip"
 	"encoding/csv"
 	"fmt"
+	proto "github.com/golang/protobuf/proto"
 	"github.com/paulmach/orb"
+	source "github.com/xitongsys/parquet-go-source/http"
+	"github.com/xitongsys/parquet-go/reader"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -18,10 +22,24 @@ type opts struct {
 	prune_dupes     bool
 	drop_first_stop bool
 	max_prune       int64
+	speed_missing   bool
+	azimuth_missing bool
+}
+
+//a srtucture for processing parquet files
+type pq_obv struct {
+	Datetime *int32   `parquet:"name=datetime, type=INT64, convertedtype=UINT_64"`
+	Lat      *float64 `parquet:"name=lat, type=DOUBLE"`
+	Lon      *float64 `parquet:"name=lon, type=DOUBLE"`
+	Id       *string  `parquet:"name=Vehicle, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Firm     *string  `parquet:"name=Firm, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Type     *string  `parquet:"name=asset_type, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Azimuth  *float64 `parquet:"name=azimuth, type=DOUBLE"`
+	Speed    *float64 `parquet:"name=Speed, type=DOUBLE"`
 }
 
 //readCsvRequest reads csv data from an http request and returns it along with options included in the http headers
-func readCsvRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts) {
+func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts) {
 
 	r.ParseMultipartForm(10 << 30)
 	file, handler, err := r.FormFile("myFile")
@@ -38,21 +56,35 @@ func readCsvRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, op
 	drop_first_stop := r.Header.Get("drop_first_stop") == "true"
 	max_prune_str := r.Header.Get("max_prune")
 	max_prune, _ := strconv.ParseInt(max_prune_str, 10, 64)
+	speed_missing := r.Header.Get("speed_missing") == "true"
+	azimuth_missing := r.Header.Get("azimuth_missing") == "true"
 
-	if err != nil {
-		fmt.Println("Error retrieving the file")
-	}
-
-	compressed := strings.Contains(fn, ".gz")
-
-	obvs := readCsv(file, true, compressed)
 	opts := opts{
 		gen_resids_only: gen_resids_only,
 		prune_dupes:     prune_dupes,
 		drop_first_stop: drop_first_stop,
 		max_prune:       max_prune,
+		speed_missing:   speed_missing,
+		azimuth_missing: azimuth_missing,
 	}
 	fmt.Println(opts)
+
+	if err != nil {
+		fmt.Println("Error retrieving the file")
+	}
+	var obvs map[string][]obv
+	if strings.Contains(fn, ".csv") {
+		obvs = readCsv(file, true, false)
+	} else if strings.Contains(fn, ".gz") {
+		obvs = readCsv(file, true, true)
+	} else if strings.Contains(fn, ".parquet") {
+		obvs = readParquet(file, handler, true, opts)
+	} else if strings.Contains(fn, ".pbf") {
+		obvs = readPbf(file, true, opts)
+	} else {
+		fmt.Fprintln(w, "File must be one of .csv, .gz, .pbf or .parquet")
+	}
+
 	return obvs, opts
 }
 
@@ -124,11 +156,7 @@ func readCsv(file io.Reader, upload_info bool, compressed bool) map[string][]obv
 				o.speed = float64(-1)
 			}
 		}
-		//obvs = append(obvs, o)
 
-		//untested alt to append directly - if used get rid of split by veh call and make this func return a map
-		//fmt.Println(line)
-		//fmt.Printf("Firm Present:%s\n", firm_present)
 		m, in_map_already = append_veh_map(m, o)
 
 		if !in_map_already && upload_info {
@@ -146,24 +174,130 @@ func readCsv(file io.Reader, upload_info bool, compressed bool) map[string][]obv
 		}
 
 	}
-	//return obvs
 
 	return m
 }
 
-/*func sep_by_veh(table []obv) map[string][]obv {
-	m := make(map[string][]obv)
-	for _, o := range table {
-		_, ok := m[o.id]
-		if ok {
-			m[o.id] = append(m[o.id], o)
-		} else {
-			var n []obv
-			m[o.id] = append(n, o)
+// to be invoked if there is no speed or azimuth fields as that will result in erroneous zero values
+func replace_zeros(obvs []obv, options opts) []obv {
+	if options.speed_missing {
+		for _, o := range obvs {
+			o.speed = float64(-1)
+		}
+
+	}
+	if options.azimuth_missing {
+		for _, o := range obvs {
+			o.azimuth = float64(-1)
 		}
 	}
+	return obvs
+}
+
+func readParquet(file multipart.File, handler *multipart.FileHeader, upload_info bool, options opts) map[string][]obv {
+	m := make(map[string][]obv)
+
+	fr := source.NewMultipartFileWrapper(handler, file)
+	pr, err := reader.NewParquetReader(fr, new(pq_obv), 4)
+	if err != nil {
+		fmt.Println(err)
+	}
+	num := int(pr.GetNumRows())
+
+	obvs := make([]pq_obv, num)
+	//pr.SkipRows(1)
+	if err = pr.Read(&obvs); err != nil {
+		fmt.Println(err)
+	}
+	//check missing values on azimuth, speed, check vehcile upload
+	in_map_already := true
+	for _, o := range obvs {
+		o_ := obv{
+			datetime: int64(*o.Datetime),
+			point:    orb.Point{*o.Lon, *o.Lat},
+			speed:    *o.Speed,
+			id:       *o.Id,
+			azimuth:  *o.Azimuth,
+		}
+
+		m, in_map_already = append_veh_map(m, o_)
+
+		if !in_map_already && upload_info {
+
+			firm := *o.Firm
+			if firm == "" {
+				firm = "Unknown"
+			}
+
+			veh_type := *o.Type
+			if veh_type == "" {
+				veh_type = "Unknown"
+			}
+			upload_veh_data(o_.id, veh_type, firm)
+		}
+	}
+
+	for id, veh := range m {
+		m[id] = replace_zeros(veh, options)
+	}
 	return m
-}*/
+}
+
+func readPbf(file io.Reader, upload_info bool, options opts) map[string][]obv {
+	//fmt.Println("Starting readCsv")
+	m := make(map[string][]obv)
+
+	batch := &Batch{}
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		fmt.Println("Can't read pbf: ", err)
+	}
+	if err := proto.Unmarshal(bytes, batch); err != nil {
+		fmt.Println("Failed to parse pbf: ", err)
+	}
+
+	var obvs []obv
+	var o obv
+
+	for _, v := range batch.GetTraces() {
+		id := v.GetVehicle().GetId()
+		fmt.Println(id)
+		for _, line := range v.GetObservations() {
+			o = obv{}
+
+			o.datetime = line.GetDatetime()
+			lon := line.GetLocation().GetLon()
+			lat := line.GetLocation().GetLat()
+			o.point = orb.Point{lon, lat}
+
+			o.id = id
+
+			o.azimuth = float64(line.GetAzimuth())
+
+			o.speed = float64(line.GetSpeed())
+
+			obvs = append(obvs, o)
+		}
+		obvs = replace_zeros(obvs, options)
+		m[id] = obvs
+		fmt.Println(m)
+		if upload_info {
+			veh := v.GetVehicle()
+			firm := veh.GetFirm()
+			if firm == "" {
+				firm = "Unknown"
+			}
+
+			veh_type := veh.GetType()
+			if veh_type == "" {
+				veh_type = "Unknown"
+			}
+			upload_veh_data(o.id, veh_type, firm)
+		}
+	}
+
+	return m
+}
 
 //append_veh_map appends the observation to the map and return whether it is already there
 func append_veh_map(m map[string][]obv, o obv) (map[string][]obv, bool) {
@@ -173,14 +307,9 @@ func append_veh_map(m map[string][]obv, o obv) (map[string][]obv, bool) {
 
 	} else {
 		var n []obv
-		//fmt.Println(m[o.id])
 
 		m[o.id] = append(n, o)
-		// fmt.Println("Print loop")
-		// for k := range m {
-		// 	fmt.Println(k)
-		// }
+
 	}
-	//fmt.Println(ok)
 	return m, ok
 }

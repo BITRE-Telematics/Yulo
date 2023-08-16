@@ -12,6 +12,8 @@ It accepts files in the same format as Tripgrouping via an curl interface from t
 ```curl -X POST -F 'myFile=@<DATA>CSV>' 0.0.0.0:<PORT>/process ```
 
 
+There is also provisional support for `parquet` and `protobuf` files. The `parquet` structure is the same as the csv. The `protobuf` format is specified in `yuloserver/ys/batch.proto`. As Yuloserver will specify a null value of `0` for missing fields for these formats, if either `azimuth` or `speed` are missing from the data, either provide a value of `-1` or pass a `true` value for the headers in the request for `azimuth_missing` or `speed_missing` respectively, or using the `-am` and `-sm` flags for `yuloserverfeed.py`.
+
 
 These files can be any number of vehicles but the whole file will be read into memory. I may adjust the read in script to avoid this. The parameter max_routines in config.yaml limits the number of vehicles being processed concurrrently but does not control memory usage.
 
@@ -21,7 +23,7 @@ Currently resources are controlled solely by the size of the input files and lim
 
 There is an inexplicable bug on some vehicles when feeding trips to Barefoot (in bffeed.go). Yuloserver will generate a valid json string but this will receive an empty reply from the barefoot server. However if this JSON is dumpted to disk and submitted via `netcat` it works. It is always the same trips but there are no identifiable special characters or encoding issues. For the rare number of trips where this happens the error handling will dump to disk and submit from there. There is alternate code for Windows machines that assumes the instalation of `ncat` but this is not tested yet.
 
-There are two alternative processes for uploading. One uploads from within Go and is not tested. The other creates CSVs and submits them to a transfer server running on the machine running the database and then submits READ_CSV calls via cypher. These upload calls are run sequentially rather than concurrently to avoid locking issues.
+
 
 --Address Matching -- 
 By default Yuloserver will try to match stops to points drawn from the database with the labels "Address" and "Location" (rest areas and loading zones). Theoretically if there are none in the database it will skip this part but just in case one can change the boolean Match_locs in config.yaml. Note that if the addresses and locations are updated one will need to restart yuloserver

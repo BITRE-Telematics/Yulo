@@ -19,6 +19,10 @@ if __name__ == "__main__":
 		help="datetime in UNIX epoch maximum duplicate data checked for. Default 0 means whatever the maximum data in database")
 	parser.add_argument("-rfs", "--drop_first_stop", type = str, default = "false",
 		help="whether drop the first stop-trip pair to residuals to be captured by prior data processed later")
+	parser.add_argument("-am", "--azimuth_missing", type = str, default = "false",
+		help="if azimuth field is not set in parquet or protobuff set to true so yuloserver will not erroneously use the default value 0")
+	parser.add_argument("-sm", "--speed_missing", type = str, default = "false",
+		help="if speed field is not set in parquet or protobuff set to true so yuloserver will not erroneously use the default value 0")
 
 	args = parser.parse_args()
 	print(args)
@@ -29,7 +33,7 @@ if __name__ == "__main__":
 
 	ul_dir = args.directory
 	print(ul_dir)
-	files = [f for f in os.listdir(ul_dir) if search(args.filestem, f) and  (f.endswith(".csv") or (f.endswith(".gz")))]
+	files = [f for f in os.listdir(ul_dir) if search(args.filestem, f) and  (f.endswith(".csv") or f.endswith(".gz") or f.endswith(".parquet") or f.endswith(".pbf"))]
 	files.sort()
 
 
@@ -48,6 +52,11 @@ if __name__ == "__main__":
 			command = command + " -H 'drop_first_stop: true' "
 		else:
 			command = command + " -H 'drop_first_stop: false' "
+
+		if args.azimuth_missing == 'true':
+			command = command + "-H 'azimuth_missing: true'"
+		if args.speed_missing == 'true':
+			command = command + "-H 'speed_missing: true'"
 		print(command)
 		os.system(command)
 
