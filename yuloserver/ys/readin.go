@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-//opts collects the instructions included in the http request
+// opts collects the instructions included in the http request
 type opts struct {
 	gen_resids_only bool
 	prune_dupes     bool
@@ -26,7 +26,7 @@ type opts struct {
 	azimuth_missing bool
 }
 
-//a srtucture for processing parquet files
+// a srtucture for processing parquet files
 type pq_obv struct {
 	Datetime *int32   `parquet:"name=datetime, type=INT64, convertedtype=UINT_64"`
 	Lat      *float64 `parquet:"name=lat, type=DOUBLE"`
@@ -38,7 +38,7 @@ type pq_obv struct {
 	Speed    *float64 `parquet:"name=Speed, type=DOUBLE"`
 }
 
-//readCsvRequest reads csv data from an http request and returns it along with options included in the http headers
+// readCsvRequest reads csv data from an http request and returns it along with options included in the http headers
 func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts) {
 
 	r.ParseMultipartForm(10 << 30)
@@ -78,9 +78,15 @@ func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts)
 	} else if strings.Contains(fn, ".gz") {
 		obvs = readCsv(file, true, true)
 	} else if strings.Contains(fn, ".parquet") {
-		obvs = readParquet(file, handler, true, opts)
+		obvs, err = readParquet(file, handler, true, opts)
+		if err != nil {
+			fmt.Fprintln(w, "Malformed parquet file")
+		}
 	} else if strings.Contains(fn, ".pbf") {
-		obvs = readPbf(file, true, opts)
+		obvs, err = readPbf(file, true, opts)
+		if err != nil {
+			fmt.Fprintln(w, "Malformed protobuf file")
+		}
 	} else {
 		fmt.Fprintln(w, "File must be one of .csv, .gz, .pbf or .parquet")
 	}
@@ -88,7 +94,7 @@ func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts)
 	return obvs, opts
 }
 
-//readCsv reads data from the request and also uploads vehicle data to the database
+// readCsv reads data from the request and also uploads vehicle data to the database
 func readCsv(file io.Reader, upload_info bool, compressed bool) map[string][]obv {
 	//fmt.Println("Starting readCsv")
 	m := make(map[string][]obv)
@@ -181,12 +187,14 @@ func readCsv(file io.Reader, upload_info bool, compressed bool) map[string][]obv
 // to be invoked if there is no speed or azimuth fields as that will result in erroneous zero values
 func replace_zeros(obvs []obv, options opts) []obv {
 	if options.speed_missing {
+		fmt.Println("Missing speed")
 		for _, o := range obvs {
 			o.speed = float64(-1)
 		}
 
 	}
 	if options.azimuth_missing {
+		fmt.Println("Missing azimuth")
 		for _, o := range obvs {
 			o.azimuth = float64(-1)
 		}
@@ -194,7 +202,7 @@ func replace_zeros(obvs []obv, options opts) []obv {
 	return obvs
 }
 
-func readParquet(file multipart.File, handler *multipart.FileHeader, upload_info bool, options opts) map[string][]obv {
+func readParquet(file multipart.File, handler *multipart.FileHeader, upload_info bool, options opts) (map[string][]obv, error) {
 	m := make(map[string][]obv)
 
 	fr := source.NewMultipartFileWrapper(handler, file)
@@ -208,9 +216,12 @@ func readParquet(file multipart.File, handler *multipart.FileHeader, upload_info
 	//pr.SkipRows(1)
 	if err = pr.Read(&obvs); err != nil {
 		fmt.Println(err)
+		return m, err
 	}
 	//check missing values on azimuth, speed, check vehcile upload
 	in_map_already := true
+	speed_all_zeros := true
+	azi_all_zeros := true
 	for _, o := range obvs {
 		o_ := obv{
 			datetime: int64(*o.Datetime),
@@ -219,7 +230,9 @@ func readParquet(file multipart.File, handler *multipart.FileHeader, upload_info
 			id:       *o.Id,
 			azimuth:  *o.Azimuth,
 		}
-
+		//will flip to false for any non default value
+		speed_all_zeros = o_.speed == float64(0)
+		azi_all_zeros = o_.azimuth == float64(0)
 		m, in_map_already = append_veh_map(m, o_)
 
 		if !in_map_already && upload_info {
@@ -236,14 +249,15 @@ func readParquet(file multipart.File, handler *multipart.FileHeader, upload_info
 			upload_veh_data(o_.id, veh_type, firm)
 		}
 	}
-
+	options.speed_missing = speed_all_zeros
+	options.azimuth_missing = azi_all_zeros
 	for id, veh := range m {
 		m[id] = replace_zeros(veh, options)
 	}
-	return m
+	return m, nil
 }
 
-func readPbf(file io.Reader, upload_info bool, options opts) map[string][]obv {
+func readPbf(file io.Reader, upload_info bool, options opts) (map[string][]obv, error) {
 	//fmt.Println("Starting readCsv")
 	m := make(map[string][]obv)
 
@@ -254,11 +268,13 @@ func readPbf(file io.Reader, upload_info bool, options opts) map[string][]obv {
 	}
 	if err := proto.Unmarshal(bytes, batch); err != nil {
 		fmt.Println("Failed to parse pbf: ", err)
+		return m, err
 	}
 
 	var obvs []obv
 	var o obv
-
+	speed_all_zeros := true
+	azi_all_zeros := true
 	for _, v := range batch.GetTraces() {
 		id := v.GetVehicle().GetId()
 		fmt.Println(id)
@@ -277,7 +293,11 @@ func readPbf(file io.Reader, upload_info bool, options opts) map[string][]obv {
 			o.speed = float64(line.GetSpeed())
 
 			obvs = append(obvs, o)
+			speed_all_zeros = o.speed == float64(0)
+			azi_all_zeros = o.azimuth == float64(0)
 		}
+		options.speed_missing = speed_all_zeros
+		options.azimuth_missing = azi_all_zeros
 		obvs = replace_zeros(obvs, options)
 		m[id] = obvs
 		fmt.Println(m)
@@ -296,10 +316,10 @@ func readPbf(file io.Reader, upload_info bool, options opts) map[string][]obv {
 		}
 	}
 
-	return m
+	return m, nil
 }
 
-//append_veh_map appends the observation to the map and return whether it is already there
+// append_veh_map appends the observation to the map and return whether it is already there
 func append_veh_map(m map[string][]obv, o obv) (map[string][]obv, bool) {
 	_, ok := m[o.id]
 	if ok {
