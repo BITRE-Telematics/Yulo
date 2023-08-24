@@ -11,7 +11,7 @@ import (
 	//"github.com/paulmach/orb"
 )
 
-//writeStop is a struct formatted to write a stop to the database
+// writeStop is a struct formatted to write a stop to the database
 type writeStop struct {
 	STOPID      string
 	START       int64
@@ -31,7 +31,7 @@ type writeStop struct {
 	ADDR        string
 }
 
-//mapstops creates a map of a vehicle and its stops for passing as parameters in a cypher query
+// mapstops creates a map of a vehicle and its stops for passing as parameters in a cypher query
 func mapstops(stops []processedStop, id string) map[string]interface{} {
 	stops_mapped := make([]map[string]interface{}, len(stops))
 	for i, stop := range stops {
@@ -63,7 +63,7 @@ func mapstops(stops []processedStop, id string) map[string]interface{} {
 	return out
 }
 
-//stopswrite writes a vehicles stops to the database
+// stopswrite writes a vehicles stops to the database
 func stopswrite(stops []processedStop, id string, i int) {
 	//fmt.Println("writing stops for", id)
 	session := Db.NewSession(Sesh_config)
@@ -81,11 +81,11 @@ func stopswrite(stops []processedStop, id string, i int) {
 
 				 SET
 				  stop.start_time = toInteger(s.START),
-				  stop.start_time_utc = toInteger(s.START_UTC),
+				  //stop.start_time_utc = toInteger(s.START_UTC),
 				  stop.start_time_utcdt = datetime(s.START_UTCDT),
 				  stop.start_timedt = datetime(s.STARTDT),
 				  stop.end_time = toInteger(s.END),
-				  stop.end_time_utc = toInteger(s.END_UTC),
+				  //stop.end_time_utc = toInteger(s.END_UTC),
 				  stop.end_time_utcdt = datetime(s.END_UTCDT),
 				  stop.end_timedt = datetime(s.ENDDT),
 				  stop.lat = toFloat(s.LAT),
@@ -144,7 +144,7 @@ func stopswrite(stops []processedStop, id string, i int) {
 
 }
 
-//writeObv stores data on an observation formatted for writing to the database
+// writeObv stores data on an observation formatted for writing to the database
 type writeObv struct {
 	OSM_ID         string
 	AZIMUTH        string
@@ -168,7 +168,7 @@ type writeObv struct {
 	SOURCE_FRAC    float64
 }
 
-//to_string formats a float to a string provided it is higher than a value that indicates missing data, 0 or 1 depending on the variable
+// to_string formats a float to a string provided it is higher than a value that indicates missing data, 0 or 1 depending on the variable
 func to_string(f float64, v int) string {
 	vf := float64(v)
 	if f < vf {
@@ -178,7 +178,7 @@ func to_string(f float64, v int) string {
 	}
 }
 
-//tripswrite writes trips to the database and connects them with prior and following trips and stops
+// tripswrite writes trips to the database and connects them with prior and following trips and stops
 func tripwrite(trips []processedTrip, i int) {
 	session := Db.NewSession(Sesh_config)
 
@@ -238,7 +238,7 @@ func tripwrite(trips []processedTrip, i int) {
 
 }
 
-//to_write_Obv converts a processedObvs into a format reading for writing to the database
+// to_write_Obv converts a processedObvs into a format reading for writing to the database
 func to_writeObv(obv processedObv, id string, trip string) writeObv {
 	var o_type string
 	if len(obv.Imp_Obvs) > 0 {
@@ -279,7 +279,7 @@ func to_writeObv(obv processedObv, id string, trip string) writeObv {
 	return writeObv
 }
 
-//maps_obvs maps creates a map of obvs to be passed as parameters to a cypher query
+// maps_obvs maps creates a map of obvs to be passed as parameters to a cypher query
 func maps_obvs(obvs []processedObv, id string, trip string) map[string]interface{} {
 	obvs_mapped := make([]map[string]interface{}, len(obvs))
 	for i, o := range obvs {
@@ -294,7 +294,7 @@ func maps_obvs(obvs []processedObv, id string, trip string) map[string]interface
 	return out
 }
 
-//write_obs_batch writes observation data to the database
+// write_obs_batch writes observation data to the database
 func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 	//fmt.Println(tripobvs)
 	session := Db.NewSession(Sesh_config)
@@ -320,7 +320,7 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 		CREATE (observation:Observation{
 			speed: toFloat(o.SPEED),
 			datetime: toInteger(o.DATETIME),
-			datetime_utc: toInteger(o.DATETIME_UTC),
+			//datetime_utc: toInteger(o.DATETIME_UTC),
 			datetime_utcdt: datetime(o.DATETIME_UTCDT),
 			datetimedt: datetime(o.DATETIMEDT),
 			lat: toFloat(o.LAT),
@@ -395,7 +395,7 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 
 }
 
-//tripswrite coordinates the writing of trips and trip observations to the database
+// tripswrite coordinates the writing of trips and trip observations to the database
 func tripswrite(trips []processedTrip, id string) {
 	var wg sync.WaitGroup
 	//fmt.Println("writing observations and trips for", id)
