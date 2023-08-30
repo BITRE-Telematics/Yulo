@@ -10,10 +10,10 @@ import (
 	"strings"
 )
 
-// STE is a spatial data collection of Australian states, for determining correct time zones
+//STE is a spatial data collection of Australian states, for determining correct time zones
 var STE *[]Geog
 
-// processedImpObv collects data on imputed observations after post barefoot processing
+//processedImpObv collects data on imputed observations after post barefoot processing
 type processedImpObv struct {
 	Osm_id  string
 	Azimuth float64
@@ -21,7 +21,7 @@ type processedImpObv struct {
 	Forward bool
 }
 
-// processedObv collects data on observations after post barefoot processing
+//processedObv collects data on observations after post barefoot processing
 type processedObv struct {
 	Datetime       int64
 	Datetime_utc   int64
@@ -43,7 +43,7 @@ type processedObv struct {
 	Target_frac    float64
 }
 
-// processedTrip collects processed Trips
+//processedTrip collects processed Trips
 type processedTrip struct {
 	Trip           string
 	Prior_stop     string
@@ -51,7 +51,7 @@ type processedTrip struct {
 	Obvs           []processedObv
 }
 
-// update_seg_sa2 updates the sa2 associated with a segment in the database
+//update_seg_sa2 updates the sa2 associated with a segment in the database
 func update_seg_sa2(sa2 string, gcc string, osm_id string) {
 	sesh_config_segs := neo4j.SessionConfig{
 		DatabaseName: Creds.Segs_db,
@@ -82,7 +82,7 @@ func update_seg_sa2(sa2 string, gcc string, osm_id string) {
 	}
 }
 
-// postbarefootobv processes an observation from barefoot and adds spatial codes
+//postbarefootobv processes an observation from barefoot and adds spatial codes
 func postbarefootobv(obv Json_out, last_point orb.Point, last_index int, i int) (processedObv, int) {
 	o_out := processedObv{
 		Datetime:      obv.Datetime,
@@ -158,7 +158,7 @@ func postbarefootobv(obv Json_out, last_point orb.Point, last_index int, i int) 
 	return o_out, last_index_out
 }
 
-// barefoot will sometimes return an imputed seg more than once in once path
+//barefoot will sometimes return an imputed seg more than once in once path
 func is_seg_dupe(osm_id string, segs []processedImpObv) bool {
 	for _, imp_obv := range segs {
 		if imp_obv.Osm_id == osm_id {
@@ -170,7 +170,7 @@ func is_seg_dupe(osm_id string, segs []processedImpObv) bool {
 
 }
 
-// pbTrip processes trips after barefoot
+//pbTrip processes trips after barefoot
 func pbTrip(trip []Json_out, ps string, fs string, tripid string) processedTrip {
 
 	tripout := processedTrip{
@@ -192,7 +192,7 @@ func pbTrip(trip []Json_out, ps string, fs string, tripid string) processedTrip 
 	return (tripout)
 }
 
-// postBarefoot processes batches of vehicle data after barefoot
+//postBarefoot processes batches of vehicle data after barefoot
 func postbarefoot(trips []trip_bf_out) []processedTrip {
 	var tripsout []processedTrip
 	for _, t := range trips {

@@ -12,11 +12,12 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
 
-// opts collects the instructions included in the http request
+//opts collects the instructions included in the http request
 type opts struct {
 	gen_resids_only bool
 	prune_dupes     bool
@@ -24,9 +25,10 @@ type opts struct {
 	max_prune       int64
 	speed_missing   bool
 	azimuth_missing bool
+	raw_output      bool
 }
 
-// a srtucture for processing parquet files
+//a srtucture for processing parquet files
 type pq_obv struct {
 	Datetime *int32   `parquet:"name=datetime, type=INT64, convertedtype=UINT_64"`
 	Lat      *float64 `parquet:"name=lat, type=DOUBLE"`
@@ -38,7 +40,7 @@ type pq_obv struct {
 	Speed    *float64 `parquet:"name=Speed, type=DOUBLE"`
 }
 
-// readCsvRequest reads csv data from an http request and returns it along with options included in the http headers
+//readCsvRequest reads csv data from an http request and returns it along with options included in the http headers
 func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts) {
 
 	r.ParseMultipartForm(10 << 30)
@@ -46,6 +48,7 @@ func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts)
 	if err != nil {
 		fmt.Fprintln(w, "Error in form file")
 	}
+
 	fmt.Println(handler.Header)
 
 	fn := handler.Filename
@@ -58,6 +61,7 @@ func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts)
 	max_prune, _ := strconv.ParseInt(max_prune_str, 10, 64)
 	speed_missing := r.Header.Get("speed_missing") == "true"
 	azimuth_missing := r.Header.Get("azimuth_missing") == "true"
+	raw_output := r.Header.Get("raw_output") == "true"
 
 	opts := opts{
 		gen_resids_only: gen_resids_only,
@@ -66,24 +70,32 @@ func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts)
 		max_prune:       max_prune,
 		speed_missing:   speed_missing,
 		azimuth_missing: azimuth_missing,
+		raw_output:      raw_output,
 	}
-	fmt.Println(opts)
+	fmt.Println("File options:")
+	opt_values := reflect.ValueOf(opts)
+	opt_types := opt_values.Type()
+	for i := 0; i < opt_values.NumField(); i++ {
+		fmt.Println(opt_types.Field(i).Name, ":", opt_values.Field(i))
+	}
 
 	if err != nil {
 		fmt.Println("Error retrieving the file")
 	}
 	var obvs map[string][]obv
+
+	upload_info := !opts.raw_output
 	if strings.Contains(fn, ".csv") {
-		obvs = readCsv(file, true, false)
+		obvs = readCsv(file, upload_info, false)
 	} else if strings.Contains(fn, ".gz") {
-		obvs = readCsv(file, true, true)
+		obvs = readCsv(file, upload_info, true)
 	} else if strings.Contains(fn, ".parquet") {
-		obvs, err = readParquet(file, handler, true, opts)
+		obvs, err = readParquet(file, handler, upload_info, opts)
 		if err != nil {
 			fmt.Fprintln(w, "Malformed parquet file")
 		}
 	} else if strings.Contains(fn, ".pbf") {
-		obvs, err = readPbf(file, true, opts)
+		obvs, err = readPbf(file, upload_info, opts)
 		if err != nil {
 			fmt.Fprintln(w, "Malformed protobuf file")
 		}
@@ -94,7 +106,7 @@ func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts)
 	return obvs, opts
 }
 
-// readCsv reads data from the request and also uploads vehicle data to the database
+//readCsv reads data from the request and also uploads vehicle data to the database
 func readCsv(file io.Reader, upload_info bool, compressed bool) map[string][]obv {
 	//fmt.Println("Starting readCsv")
 	m := make(map[string][]obv)
@@ -319,7 +331,7 @@ func readPbf(file io.Reader, upload_info bool, options opts) (map[string][]obv, 
 	return m, nil
 }
 
-// append_veh_map appends the observation to the map and return whether it is already there
+//append_veh_map appends the observation to the map and return whether it is already there
 func append_veh_map(m map[string][]obv, o obv) (map[string][]obv, bool) {
 	_, ok := m[o.id]
 	if ok {

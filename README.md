@@ -26,6 +26,8 @@ All other fields are ignored.
 
 There is also provisional support for `parquet` and `protobuf` files. The `parquet` structure is the same as the csv. The `protobuf` format is specified in `yuloserver/ys/batch.proto`. As Yuloserver will specify a null value of `0` for missing fields for these formats, if either `azimuth` or `speed` are missing from the data, either provide a value of `-1` or pass a `true` value for the headers in the request for `azimuth_missing` or `speed_missing` respectively, or using the `-am` and `-sm` flags for `yuloserverfeed.py`.
 
+Adding a header `raw_output=true` will return a json string of processed data (saved to the working directory) rather than uploading data. This and other headers can be added with `yuloserver/yuloserverfeed.py`
+
 
 You will need to create a NEO4j database (with receiving server if using LOAD_CSV) either locally or on another machine and then add the ip, port number and credentials to config.yaml and creds.yaml files in goyulo/src/yuloserver
 Once data is in the requistite format as described in TripGrouping or the wiki and relevant credential files are created.

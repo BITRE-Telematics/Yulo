@@ -70,12 +70,13 @@ func bffeed(trip trip) (trip_bf_out, error) {
 	//fmt.Println(trip.tripid)
 	addr := Params.Host + ":" + Params.Port
 	conn, err := net.Dial("tcp", addr)
-	defer conn.Close()
 	if err != nil {
 		fmt.Println("Barefoot connection error")
 		return trip_bf_out{}, err
 
 	}
+	defer conn.Close()
+
 	cmds := to_json(trip)
 
 	var matched_trip []Json_out

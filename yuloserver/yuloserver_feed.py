@@ -23,6 +23,8 @@ if __name__ == "__main__":
 		help="if azimuth field is not set in parquet or protobuff set to true so yuloserver will not erroneously use the default value 0")
 	parser.add_argument("-sm", "--speed_missing", type = str, default = "false",
 		help="if speed field is not set in parquet or protobuff set to true so yuloserver will not erroneously use the default value 0")
+	parser.add_argument("-raw", "--raw_output", type = str, default = "false",
+		help="saves a raw json in working directory ratherthan uploading to database")
 
 	args = parser.parse_args()
 	print(args)
@@ -57,6 +59,14 @@ if __name__ == "__main__":
 			command = command + "-H 'azimuth_missing: true'"
 		if args.speed_missing == 'true':
 			command = command + "-H 'speed_missing: true'"
+		if args.raw_output == 'true':
+			command = command + "-H 'raw_output: true'"
 		print(command)
-		os.system(command)
+		if args.raw_output == 'true':
+			out  = os.popen(command).read()
+			fn_json = os.path.basename(fn) + "OUTPUT.json" 
+			with open(fn_json, "w") as f:
+				f.write(out)
+		else:
+			os.system(command)
 

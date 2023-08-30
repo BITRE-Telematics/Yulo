@@ -11,6 +11,8 @@ It assumes there is a neo4j server running with the credentials and address stip
 It accepts files in the same format as Tripgrouping via an curl interface from the command line or a scripting language as needed.. An example query is
 ```curl -X POST -F 'myFile=@<DATA>CSV>' 0.0.0.0:<PORT>/process ```
 
+The adding a header `raw_output=true` will return a json string of processed data rather than uploading data. This and other headers can be added with `yuloserver/yuloserverfeed.py`
+
 
 There is also provisional support for `parquet` and `protobuf` files. The `parquet` structure is the same as the csv. The `protobuf` format is specified in `yuloserver/ys/batch.proto`. As Yuloserver will specify a null value of `0` for missing fields for these formats, if either `azimuth` or `speed` are missing from the data, either provide a value of `-1` or pass a `true` value for the headers in the request for `azimuth_missing` or `speed_missing` respectively, or using the `-am` and `-sm` flags for `yuloserverfeed.py`.
 

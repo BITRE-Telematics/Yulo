@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/bitre-telematics/yulo/ys"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"net/http"
 	"os"
 	"runtime"
+	"yuloserver/ys"
 )
 
 var (
