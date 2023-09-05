@@ -7,7 +7,6 @@ import (
 	"strconv"
 )
 
-
 //obv contains data for a given observation
 type obv struct {
 	datetime    int64
@@ -91,9 +90,10 @@ func nostop(obv obv, agg aggdict) aggdict {
 	agg.lastobv = obv
 	return agg
 }
+
 //istop updates an aggdict object when an observation is determined to be outside a stop event
 //and the potential stop is determined to be a stop
-func isstop(obv obv, agg aggdict, drop_first_stop bool) aggdict {
+func isstop(obv obv, agg aggdict, drop_first_stop bool, parameters Para) aggdict {
 	//fmt.Println("is stop")
 	l := len(agg.stops)
 	agg.potstopobvs = append(agg.potstopobvs, obv)
@@ -102,14 +102,14 @@ func isstop(obv obv, agg aggdict, drop_first_stop bool) aggdict {
 		agg.dump_to_resids = append(agg.potstopobvs, agg.pottripobvs...)
 		agg.passed_first = true
 	} else {
-		interstopdur := Params.StopCollateDuration + 1
-		interstopdist := Params.StopDistance + 1
+		interstopdur := parameters.StopCollateDuration + 1
+		interstopdist := parameters.StopDistance + 1
 		if l > 0 {
 
 			interstopdur = agg.potstopobvs[0].datetime - agg.stops[l-1].end
 			interstopdist = geo.DistanceHaversine(agg.clustercentre, agg.stops[l-1].point)
 		}
-		if interstopdist < Params.StopDistance && interstopdur < Params.StopCollateDuration {
+		if interstopdist < parameters.StopDistance && interstopdur < parameters.StopCollateDuration {
 			/// adjust centroid
 			agg.stops[l-1].end = agg.potstopobvs[len(agg.potstopobvs)-1].datetime
 
@@ -163,11 +163,11 @@ func isstop(obv obv, agg aggdict, drop_first_stop bool) aggdict {
 //cichiter performs an iteration of the clustering process on a given observation in combination
 //with the aggregated data up to that point, determining whether each observation is
 //part of a trip or stop event
-func cichiter(agg aggdict, obv obv, drop_first_stop bool) aggdict {
+func cichiter(agg aggdict, obv obv, drop_first_stop bool, parameters Para) aggdict {
 	if obv.datetime == agg.lastobv.datetime {
 		//fmt.Println("double time stamp")
 		return agg
-	} else if Params.SkipDupes {
+	} else if parameters.SkipDupes {
 		if checkdupe(agg.lastobv, obv) {
 			//fmt.Println("Dupe")
 			return agg
@@ -181,24 +181,24 @@ func cichiter(agg aggdict, obv obv, drop_first_stop bool) aggdict {
 
 		imp_speed := (dist / 1000) / (float64(diff_time) / 3600)
 
-		if imp_speed > Params.MaxSpeed {
+		if imp_speed > parameters.MaxSpeed {
 			return agg //erroneous jump, discard
 		}
 
-		if dist < Params.StopDistance {
+		if dist < parameters.StopDistance {
 			//fmt.Println("In pot stop")
 			agg = inpotstop(obv, agg)
 		} else if len(agg.potstopobvs) > 0 {
 			time := agg.lastobv.datetime - agg.potstopobvs[0].datetime
 
-			if dist > Params.MaxDist || (obv.datetime-agg.lastobv.datetime) > Params.MaxTime {
+			if dist > parameters.MaxDist || (obv.datetime-agg.lastobv.datetime) > parameters.MaxTime {
 				obv.new_subtrip = true
-				//fmt.Printf("subtrip md %g mt %d d %g t %d\n", Params.MaxDist, Params.MaxTime, dist, time)
+				//fmt.Printf("subtrip md %g mt %d d %g t %d\n", parameters.MaxDist, parameters.MaxTime, dist, time)
 			}
 
-			if time > Params.StopDuration {
+			if time > parameters.StopDuration {
 				//fmt.Println("is stop")
-				agg = isstop(obv, agg, drop_first_stop)
+				agg = isstop(obv, agg, drop_first_stop, parameters)
 			} else {
 				//fmt.Println("no stop")
 				agg = nostop(obv, agg)
@@ -215,7 +215,7 @@ func cichiter(agg aggdict, obv obv, drop_first_stop bool) aggdict {
 }
 
 //CichCluster takes a slice of observations and groups them into trips, stops and residuals
-func CichCluster(obvs []obv, id string, drop_first_stop bool) vehpack {
+func CichCluster(obvs []obv, id string, drop_first_stop bool, parameters Para) vehpack {
 	fmt.Printf(Cyan+"Tripgrouping %s with %d observations \n"+Reset, id, len(obvs))
 	//fmt.Println(len(obvs))
 	agg := aggdict{clustercentre: obvs[0].point,
@@ -224,7 +224,7 @@ func CichCluster(obvs []obv, id string, drop_first_stop bool) vehpack {
 	}
 	//this should be appending to stops and trips
 	for _, obv := range obvs[1:] {
-		agg = cichiter(agg, obv, drop_first_stop)
+		agg = cichiter(agg, obv, drop_first_stop, parameters)
 
 	}
 	residuals := append(agg.potstopobvs, agg.pottripobvs...)

@@ -97,6 +97,11 @@ func main() {
 	}
 	ys.Sesh_config_fabric = sesh_config_fabric
 
+	resids_config := neo4j.SessionConfig{
+		DatabaseName: creds.Resids_db,
+	}
+	ys.Resids_config = resids_config
+
 	if err != nil {
 		fmt.Printf("Error %v", err)
 	}

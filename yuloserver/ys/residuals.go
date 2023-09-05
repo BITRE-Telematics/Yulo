@@ -4,11 +4,15 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var Resids_config neo4j.SessionConfig
+
 //writeResiduals dumps the unprocessed observations from a vehicle to disk
 func writeResiduals(obvs []obv) {
 
@@ -75,11 +79,13 @@ func writeResidualsDb(obvs []obv, i int) {
 
 			writer.Write(l)
 		}
+		writer.Flush()
 		csv_string := b.String()
-		session := Db.NewSession(Sesh_config)
+		//fmt.Println(b)
+		session := Db.NewSession(Resids_config)
 
 		defer session.Close()
-		query := "MATCH(a:Asset{id: $ID}) SET a.residuals = $RESIDUALS"
+		query := "MERGE(a:Asset{id: $ID}) SET a.residuals = $RESIDUALS"
 		parameters := map[string]interface{}{"ID": id, "RESIDUALS": csv_string}
 		res, err := session.Run(query, parameters)
 
@@ -119,9 +125,9 @@ func readResiduals(id string) []obv {
 
 //readResidualsDb reads residual data for a vehicle from the database
 func readResidualsDb(id string) []obv {
-	session := Db.NewSession(Sesh_config)
+	session := Db.NewSession(Resids_config)
 	defer session.Close()
-	statement := "MATCH(a:Asset{id: $ID}) return c.residuals"
+	statement := "MATCH(a:Asset{id: $ID}) return a.residuals"
 	parameters := map[string]interface{}{"ID": id}
 	db_resp, err := session.Run(statement, parameters)
 
@@ -138,20 +144,23 @@ func readResidualsDb(id string) []obv {
 		fmt.Println(db_resp.Err())
 	}
 	var o []obv
-	var csv_string string
+	//var csv_string string
 	if db_resp.Next() {
+		fmt.Println(db_resp)
 		csv_string := db_resp.Record().GetByIndex(0)
-		if csv_string == nil {
+		if csv_string != nil {
+			csv := strings.NewReader(csv_string.(string))
+			o = readCsv(csv, false, false)[id]
+
+			//fmt.Println(o)
+
+		} else {
 			fmt.Printf("No residuals in db for %s \n", id)
-			return o
 		}
 	} else {
 		fmt.Printf("No residuals in db for %s \n", id)
-		return o
-	}
 
-	csv := strings.NewReader(csv_string)
-	o = readCsv(csv, false, false)[id]
+	}
 
 	return o
 }

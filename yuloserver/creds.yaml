@@ -9,3 +9,4 @@
   fabric_name: fabric
   segs_db: neo4j
   locs_db: neo4j
+  resids_db: neo4j

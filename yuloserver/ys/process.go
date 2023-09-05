@@ -38,6 +38,16 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 	if opts.drop_first_stop {
 		fmt.Println("Dropping first stop pair to residuals to be captured when prior data is processed")
 	}
+	custom, parameters := check_custom_params(opts)
+	fmt.Println("Custom params", parameters)
+	//potentially go to defaults
+	if custom {
+		if !opts.raw_output {
+			fmt.Fprintf(w, "Custom parameters only available with raw_output, stopping")
+			//parameters = Params
+			return
+		}
+	}
 	var wg sync.WaitGroup
 	raw_chan := make(chan raw_return)
 	var raw_outputs []raw_return
@@ -48,7 +58,7 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 		go func(v []obv) {
 			defer wg.Done()
 			//_ := check_resources(Params.Max_memory, Params.Max_cpu) //should block until resources are free
-			ProcessVehicle(v, opts, raw_chan)
+			ProcessVehicle(v, opts, raw_chan, parameters)
 
 			<-Guard
 
@@ -77,8 +87,9 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 }
 
 //ProcessVehicle processes a given vehicle
-func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return) {
+func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return, parameters Para) {
 	sort.SliceStable(obvs, func(i, j int) bool { return obvs[i].datetime < obvs[j].datetime })
+
 	id := obvs[0].id
 	fmt.Println(Yellow+"Starting ", id+Reset)
 	if inc_zero_dt(obvs) {
@@ -90,7 +101,10 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return) {
 		}
 		raw_chan <- raw_return{}
 	}
-	resids := readResiduals(id)
+	resids := readResidualsDb(id)
+	if len(resids) == 0 {
+		resids = readResiduals(id)
+	}
 	max := max_datetime(obvs) + Params.MaxResidsGap
 	min := min_datetime(obvs) - Params.MaxResidsGap
 	var reserved []obv
@@ -101,7 +115,7 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return) {
 	if opts.gen_resids_only {
 		fmt.Println("Generating residuals only")
 		start := time.Now()
-		vehpack := CichCluster(obvs, id, opts.drop_first_stop)
+		vehpack := CichCluster(obvs, id, opts.drop_first_stop, parameters)
 		write_resids = append(vehpack.residuals, reserved...)
 		fmt.Printf("Writing %d total residuals for %s \n", len(write_resids), id)
 
@@ -111,7 +125,7 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return) {
 			}
 
 		} else {
-			writeResiduals(write_resids)
+			writeResidualsDb(write_resids, 1)
 			//the following is usually in transfer_upload to make sure residuals aren't lost if upload fails
 			//it perhaps is more ideally done with a channel and function rather than this duplicated code
 			resids_tmp := Params.Residual_dir + id + "TEMP"
@@ -137,7 +151,7 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return) {
 	if len(obvs) > 0 {
 
 		start := time.Now()
-		vehpack := CichCluster(obvs, id, opts.drop_first_stop)
+		vehpack := CichCluster(obvs, id, opts.drop_first_stop, parameters)
 
 		fmt.Printf(Grey+"CichCluster for %s completed in %s\n"+Reset, id, time.Since(start).String())
 
@@ -179,7 +193,7 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return) {
 			//add in retained too early/late residuals
 			write_resids = append(vehpack.residuals, reserved...)
 
-			writeResiduals(write_resids)
+			writeResidualsDb(write_resids, 1)
 		}
 		fmt.Printf(Red+"%s done at %s\n"+Reset, id, time.Now().String())
 		raw_chan <- raw_return{}

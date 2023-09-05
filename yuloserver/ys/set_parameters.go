@@ -52,6 +52,7 @@ type Cred_struct struct {
 	Fabric       string `yaml:"fabric_db"`
 	Segs_db      string `yaml:"segs_db"`
 	Locs_db      string `yaml:"locs_db"`
+	Resids_db    string `yaml:"resids_db"`
 }
 
 //Set_parameters reads in parameters and assigns them to the params object

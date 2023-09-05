@@ -363,7 +363,7 @@ func write_obs_batch(tripobvs map[string]interface{}, onExit func(), i int) {
 			osm_id: o.SOURCE_ID
 			})
 
-		MERGE (source)<-[son:ON]-(observation)
+		CREATE (source)<-[son:ON]-(observation)
 		SET son.source = toBoolean('true'), son.frac = o.SOURCE_FRAC
 
 		WITH o, son

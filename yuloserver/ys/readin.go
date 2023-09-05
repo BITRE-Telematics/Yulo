@@ -17,17 +17,6 @@ import (
 	"strings"
 )
 
-//opts collects the instructions included in the http request
-type opts struct {
-	gen_resids_only bool
-	prune_dupes     bool
-	drop_first_stop bool
-	max_prune       int64
-	speed_missing   bool
-	azimuth_missing bool
-	raw_output      bool
-}
-
 //a srtucture for processing parquet files
 type pq_obv struct {
 	Datetime *int32   `parquet:"name=datetime, type=INT64, convertedtype=UINT_64"`
@@ -54,24 +43,7 @@ func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts)
 	fn := handler.Filename
 	fmt.Printf("file is %s\n", fn)
 
-	gen_resids_only := r.Header.Get("gen_resids_only") == "true"
-	prune_dupes := r.Header.Get("prune_dupes") == "true"
-	drop_first_stop := r.Header.Get("drop_first_stop") == "true"
-	max_prune_str := r.Header.Get("max_prune")
-	max_prune, _ := strconv.ParseInt(max_prune_str, 10, 64)
-	speed_missing := r.Header.Get("speed_missing") == "true"
-	azimuth_missing := r.Header.Get("azimuth_missing") == "true"
-	raw_output := r.Header.Get("raw_output") == "true"
-
-	opts := opts{
-		gen_resids_only: gen_resids_only,
-		prune_dupes:     prune_dupes,
-		drop_first_stop: drop_first_stop,
-		max_prune:       max_prune,
-		speed_missing:   speed_missing,
-		azimuth_missing: azimuth_missing,
-		raw_output:      raw_output,
-	}
+	opts := get_opts(r)
 	fmt.Println("File options:")
 	opt_values := reflect.ValueOf(opts)
 	opt_types := opt_values.Type()
@@ -104,6 +76,58 @@ func readRequest(r http.Request, w http.ResponseWriter) (map[string][]obv, opts)
 	}
 
 	return obvs, opts
+}
+
+//opts collects the instructions included in the http request
+type opts struct {
+	gen_resids_only bool
+	prune_dupes     bool
+	drop_first_stop bool
+	max_prune       int64
+	speed_missing   bool
+	azimuth_missing bool
+	raw_output      bool
+	stop_duration   int64
+	stop_distance   float64
+}
+
+//add to as necessary
+func check_custom_params(options opts) (bool, Para) {
+	new_params := Params
+	if options.stop_duration > 0 {
+		new_params.StopDuration = options.stop_duration
+	}
+	if options.stop_distance > 0 {
+		new_params.StopDistance = options.stop_distance
+	}
+	custom := !(new_params == Params)
+
+	return custom, new_params
+}
+
+func get_opts(r http.Request) opts {
+
+	max_prune_str := r.Header.Get("max_prune")
+	max_prune, _ := strconv.ParseInt(max_prune_str, 10, 64)
+
+	stop_distance_str := r.Header.Get("stop_distance")
+	stop_distance, _ := strconv.ParseFloat(stop_distance_str, 64)
+
+	stop_duration_str := r.Header.Get("stop_duration")
+	stop_duration, _ := strconv.ParseInt(stop_duration_str, 10, 64)
+
+	opts := opts{
+		gen_resids_only: r.Header.Get("gen_resids_only") == "true",
+		prune_dupes:     r.Header.Get("prune_dupes") == "true",
+		drop_first_stop: r.Header.Get("drop_first_stop") == "true",
+		max_prune:       max_prune,
+		speed_missing:   r.Header.Get("speed_missing") == "true",
+		azimuth_missing: r.Header.Get("azimuth_missing") == "true",
+		raw_output:      r.Header.Get("raw_output") == "true",
+		stop_duration:   stop_duration,
+		stop_distance:   stop_distance,
+	}
+	return opts
 }
 
 //readCsv reads data from the request and also uploads vehicle data to the database

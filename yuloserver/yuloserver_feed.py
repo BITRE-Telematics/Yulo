@@ -25,6 +25,10 @@ if __name__ == "__main__":
 		help="if speed field is not set in parquet or protobuff set to true so yuloserver will not erroneously use the default value 0")
 	parser.add_argument("-raw", "--raw_output", type = str, default = "false",
 		help="saves a raw json in working directory ratherthan uploading to database")
+	parser.add_argument("-sdur", "--stop_duration", type = int, default = "900",
+		help="Minimum stop duration in seconds- only works with the -raw flag")
+	parser.add_argument("-sdist", "--stop_distance", type = int, default = "100",
+		help="Stop radius in metres - only works with -raw flag")
 
 	args = parser.parse_args()
 	print(args)
@@ -61,6 +65,12 @@ if __name__ == "__main__":
 			command = command + "-H 'speed_missing: true'"
 		if args.raw_output == 'true':
 			command = command + "-H 'raw_output: true'"
+
+		if args.stop_duration != 900:
+			command = command + " -H 'stop_duration: %s'" % args.stop_duration
+
+		if args.stop_distance != 100:
+			command = command + " -H 'stop_distance: %s'" % args.stop_distance
 		print(command)
 		if args.raw_output == 'true':
 			out  = os.popen(command).read()
