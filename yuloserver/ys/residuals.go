@@ -13,6 +13,31 @@ import (
 
 var Resids_config neo4j.SessionConfig
 
+type residual_return struct {
+	Datetime int64
+	Speed    float64
+	Id       string
+	Azimuth  float64
+	Lat      float64
+	Lon      float64
+}
+
+func toResidualReturn(obvs []obv) []residual_return {
+	var out []residual_return
+	for _, o := range obvs {
+		o_ := residual_return{
+			Datetime: o.datetime,
+			Speed:    o.speed,
+			Id:       o.id,
+			Azimuth:  o.azimuth,
+			Lat:      o.point.Lat(),
+			Lon:      o.point.Lon(),
+		}
+		out = append(out, o_)
+	}
+	return out
+}
+
 //writeResiduals dumps the unprocessed observations from a vehicle to disk
 func writeResiduals(obvs []obv) {
 

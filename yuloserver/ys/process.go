@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"net/http"
-	"os"
+	//"os"
 	"sort"
 	"sync"
 	"time"
@@ -49,25 +49,27 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var wg sync.WaitGroup
-	raw_chan := make(chan raw_return)
+	raw_chan := make(chan raw_return, len(obvs_map))
 	var raw_outputs []raw_return
 	for _, v := range obvs_map {
 
 		Guard <- struct{}{} // should block if channel full, comment out if using resource limits and comment below
 		wg.Add(1)
 		go func(v []obv) {
-			defer wg.Done()
+
 			//_ := check_resources(Params.Max_memory, Params.Max_cpu) //should block until resources are free
 			ProcessVehicle(v, opts, raw_chan, parameters)
-
+			wg.Done()
+			//fmt.Println("dropping guard")
 			<-Guard
 
 		}(v)
 	}
-
+	//fmt.Println(Red + "All submitted" + Reset)
 	go func() {
 		defer close(raw_chan)
 		wg.Wait()
+
 	}()
 
 	if opts.raw_output {
@@ -82,6 +84,7 @@ func ProcessFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintf(w, "File completely processed in %s at %s\n", time.Since(start).String(), time.Now().String())
+	fmt.Println(Red+"File completely processed in %s at %s\n", time.Since(start).String(), time.Now().String()+Reset)
 	//fmt.Fprintf(w, "File completely entered into server in %s at %s\n", time.Since(start).String(), time.Now().String())
 
 }
@@ -99,7 +102,10 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return, parameters 
 			err:   errors.New("Includes 0 datetimes"),
 			stage: "CSV read in",
 		}
+		fmt.Println(Red + "pushing to channel: " + Reset)
+		fmt.Println(len(raw_chan))
 		raw_chan <- raw_return{}
+		return
 	}
 	resids := readResidualsDb(id)
 	if len(resids) == 0 {
@@ -114,26 +120,27 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return, parameters 
 	//This is an option to only generate residuals in case they need to be fixed for whatever reason
 	if opts.gen_resids_only {
 		fmt.Println("Generating residuals only")
-		start := time.Now()
+		//start := time.Now()
 		vehpack := CichCluster(obvs, id, opts.drop_first_stop, parameters)
 		write_resids = append(vehpack.residuals, reserved...)
 		fmt.Printf("Writing %d total residuals for %s \n", len(write_resids), id)
 
 		if opts.raw_output {
+			// fmt.Println(Red + "pushing to channel: " + Reset)
+			// fmt.Println(len(raw_chan))
 			raw_chan <- raw_return{
-				Residuals: write_resids,
+				Residuals: toResidualReturn(write_resids),
 			}
+			return
 
 		} else {
 			writeResidualsDb(write_resids, 1)
-			//the following is usually in transfer_upload to make sure residuals aren't lost if upload fails
-			//it perhaps is more ideally done with a channel and function rather than this duplicated code
-			resids_tmp := Params.Residual_dir + id + "TEMP"
-			os.Remove(Params.Residual_dir + id)
-			os.Rename(resids_tmp, Params.Residual_dir+id)
-			fmt.Printf("Residuals for %s generated in %s\n", id, time.Since(start).String())
+
+			// fmt.Println(Red + "pushing to channel: " + Reset)
+			// fmt.Println(len(raw_chan))
+			raw_chan <- raw_return{}
+			return
 		}
-		raw_chan <- raw_return{}
 	}
 
 	//check database for duplicates
@@ -173,14 +180,17 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return, parameters 
 		fmt.Printf(Grey+"Postbarefoot for %s completed in %s\n"+Reset, id, time.Since(start).String())
 
 		if opts.raw_output {
-
+			residuals := toResidualReturn(vehpack.residuals)
 			out := raw_return{
 				Id:        id,
 				Stops:     stops,
 				Trips:     tripspbf,
-				Residuals: vehpack.residuals,
+				Residuals: residuals,
 			}
+			// fmt.Println(Red + "pushing to channel: " + Reset)
+			// fmt.Println(len(raw_chan))
 			raw_chan <- out
+			return
 
 		} else {
 			//normal upload
@@ -196,15 +206,21 @@ func ProcessVehicle(obvs []obv, opts opts, raw_chan chan raw_return, parameters 
 			writeResidualsDb(write_resids, 1)
 		}
 		fmt.Printf(Red+"%s done at %s\n"+Reset, id, time.Now().String())
+		fmt.Println(Red + "pushing to channel: " + Reset)
+		fmt.Println(len(raw_chan))
 		raw_chan <- raw_return{}
+		return
 
 	}
+	fmt.Println(Red + "pushing to channel: " + Reset)
+	fmt.Println(len(raw_chan))
 	raw_chan <- raw_return{}
+	return
 }
 
 type raw_return struct {
 	Id        string
 	Stops     []processedStop
 	Trips     []processedTrip
-	Residuals []obv
+	Residuals []residual_return
 }
