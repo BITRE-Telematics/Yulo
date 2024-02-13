@@ -65,10 +65,10 @@ olson (string): The olson timezone
 target (string): The osm_id of the node towards which the vehicle is heading, as determined by barefoot
 forward (bool): Whether the vehicle is heading "forward" as determined by barefoot's process
 imputed_azimuth (float): where barefoot has matched to a point on a segment the azimuth of the segment at that point (given 'forward') and where the point is imputed, the azimuth at the mid point of that segment
-length(float): the length leading up to a matched segment in metres as calculated to barefoot. This is geodesic length. From September 2019 segments follwing a subtrip break (ie some of type "matched no path" will have a length derived from the [OSMR](../OpenStreetMap/OSMR.md) engine.
+length(float): the length leading up to a matched segment in metres as calculated to barefoot. This is geodesic length. From September 2019 segments follwing a subtrip break (ie some of type "matched no path" will have a length derived from the [OSRM](Map%20data/OSRM.md) engine.
 
 Segment: - note I am applying the term "segment" to what is better known in OSM parlance as a "way". Properly speaking a segment is some fraction of a way between nodes
-osm_id (string) - the osm id, as described [here](../OpenStreetMap/osm_id.md) 
+osm_id (string) - the osm id, as described [here](osm_id.md) 
 name (string) - the common name for the road
 highway (strong) - the classification given by osm, one of those in [road-types.json](../Processing/Barefoot/road-types.json.md)
 data_date(int) - date the segment attributes and geometry were last updated in unix epoch local Canberra time

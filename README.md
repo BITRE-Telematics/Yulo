@@ -29,10 +29,9 @@ There is also provisional support for `parquet` and `protobuf` files. The `parqu
 Adding a header `raw_output=true` will return a json string of processed data (saved to the working directory) rather than uploading data. This and other headers can be added with `yuloserver/yuloserverfeed.py`
 
 
-You will need to create a NEO4j database (with receiving server if using LOAD_CSV) either locally or on another machine and then add the ip, port number and credentials to config.yaml and creds.yaml files in goyulo/src/yuloserver
-Once data is in the requistite format as described in TripGrouping or the wiki and relevant credential files are created.
-![YULO logo](yulo_logo.svg)
+You will need to create a NEO4j database  either locally or on another machine and then add the ip, port number and credentials to `config.yaml` and `creds.yaml` files in `yuloserver`
 
+![YULO logo](yulo_logo.svg)ls
 Run 
 `sudo bash bashScripting/installations.sh`
 
@@ -64,7 +63,7 @@ The interaction of the different elements is roughly sketched below.
 ![Flowchart](flowchart.jpg)
 We are indebted to `https://github.com/bmwcarit/barefoot`, the code of which we have adapated.
 
-At the moment both processes asssume the database is running on another machine which is operating a simple file server (similar to that in `goyulo/src/server`). The database can also be hosted locally and `goyulo/src/yuloserver/ys/transfer_upload.go` mildly edited to remove the transfer of files. There is also an alternate upload method in `goyulo/src/yuloserver/ys/upload.go`
+
 
 `server_update.sh` assumes matching will be performed on OpenStreetMap data. This can be circumvented to use other data by creating an osm formatted xml file. This can be done using the tool `geojson2osm2` javascript tool as such
 ```

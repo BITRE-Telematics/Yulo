@@ -1,8 +1,0 @@
-Content-Type: text/x-zim-wiki
-Wiki-Format: zim 0.4
-Creation-Date: 2019-02-01T15:03:24+11:00
-
-====== start db server ======
-Created Friday 01 February 2019
-
-This script starts the database and barefoot server

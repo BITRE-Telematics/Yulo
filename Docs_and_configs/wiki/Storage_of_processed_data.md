@@ -1,2 +1,0 @@
-# Storage of processed data
-

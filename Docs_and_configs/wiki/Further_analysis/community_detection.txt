@@ -1,8 +1,0 @@
-Content-Type: text/x-zim-wiki
-Wiki-Format: zim 0.4
-Creation-Date: 2018-05-31T16:17:10+10:00
-
-====== community detection ======
-Created Thursday 31 May 2018
-
-Neo4j includes algorithms for community detection.

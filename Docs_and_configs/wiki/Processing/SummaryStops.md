@@ -1,7 +1,7 @@
 # SummaryStops
 Created Friday 27 April 2018
 
-This script has been replaced with summary_stops.py, with the clustering functions moved to [stop_cluster.py](./stopclustering.txt)
+This text describes a redundant script now part of [[Yuloserver]] to summarise stop events.
 
 SummaryStops.r
 This script determines clusters of stops defined by Tripgrouping.py to compare to defined truck stop locations. It uses the DBSCAN method to derive the clusters as, unlike other methods, including k-means, it does not require a pre-specified number of clusters. By default the dbscan::dbscan() function can take n variables and compute a Euclidean distance, but it can also accept a dist object created from a matrix. As such the script computes a matrix of n^2 great circle distances to pass to dbscan, where n is the number of stops. This is obviously computationally intensive but when run in parallel should not take long.

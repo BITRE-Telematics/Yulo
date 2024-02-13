@@ -1,8 +1,7 @@
 # Tripgrouping
 Created Friday 27 April 2018
 
-Cich style trip grouping/
-TripGrouping/ TripgroupingFunctional.py
+This describes the tripgrouping aspect of [[Yuloserver]] but the text dates to when this was a separate script.
 
 This script iterates though points by a vehicle defining stop and trip events. It uses the approach
 described in Cich et al with some modification. Because a trip and stop is only defined at the end of the subsequent stop, the trip/stop pair in process at the end of the month will not be attributed a trip or stop id. This data is residual and can be used the next period.

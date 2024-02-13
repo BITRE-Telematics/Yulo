@@ -1,62 +1,10 @@
 # postbarefoot
 Created Friday 27 April 2018
 
-postbarefoot.py
 
-This is the current version. It follows the same process as the below without redundant code such as gids, cypher uploads and reruns.
-Notably it uses the default neo4j driver syntax in place of the easier Py2neo which is idiomatic to pandas. This is because Py2neo only works with an outdated neo4j bolt driver. In future, if Py2neo is updated, I will likely change the syntax to make it more readable.
+This describes a portion of [[Yuloserver]] processing trips after they have been mapmatched by Barefoot. The text dates from when this was a separate script.
 
 Note that sometimes the shapefiles are incorrect. This means a stop or point will not me matched to the local STE because the location is outside the shapefile's polygon. These can be identified in edge cases and corrected manually both for the affected points (which will have an Olson value of UTC, STE and SA2s of 0) and the shapefiles edited to prevent that case in future. The code also searches for these points and matches to the nearest polygon, although this is somewhat computationally intensive. This could be reduced somewhat (since it is not dependent on the ASGS as such) by using OSM's state boundaries that include state waters. Since some points are in other territories I am also matching these to the nearest state. Hopefully this will only be relevant for Jervis Bay, which uses NSW time, and  Norfolk Island, Christmas Island and Cocos Island are not witnessed.
 
 Because of various edge cases the dataframe being written at the end might not always have the same number of fields and subsequently the appended csv may have mismatched columns because of too many or few headers. I should make this safer by checking for columns but I haven't got around to it.
-
-~~Postbarefootmerge.r~~
-
-~~This R script takes the JSON output from Barefoot and merges it with data that was not taken by Barefoot, including speed.~~
-~~The first line of output is always “SUCCESS” or “ERROR”. I use read.lines to skip that.~~
-
-~~Datetime does not need to return to seconds from milliseconds because Barefoot returns seconds, despite taking milliseconds, due to MatcherKState.java.~~
-
-
-~~This script was originally very slow. This was because the barefoot output was originally in nested JSON objects that created columns of dataframes that had to be unnested and then iterated through to create imputed data. This took a lot of time, especially in R. I ended up changing MatcherKState.java to produce this code within barefoot, which has sped things up considerably. It still gets read in as a dataframe with a column of dataframes where there is a imputed path, but binding the rows of this column and joining it to the other rows is relatively swift. ~~
-
-
-~~REDUNDANT - The script also matches the ids used by Barefoot with the immutable osm_ids used by OSM. Barefoot initially uses the gid for each segment, which is based on the row number of the extract downloaded from Geofabrik. It then creates two values for each segment, gid * 2 and gid * 2 + 1, to account for directionality. These are what are exported. As such, Postbarefootmerge.r needs to subtract 1 from all odd id numbers, and divide all by two to retrieve the gid. This gid must then be merged against the OSM id. The gid to OSM relation potentially changes every time the data is updated. As such, everytime a new Geofabrik extract is downloaded, the file “gids.csv” must be updated by exporting the gid and osm_id columns from mfmap_ways in the psql server in the docker container. The sequence of commands is similar to the following~~
-
-~~If desired other tags can also be extracted at this stage to provide more information, but this data will also be retained in the toSHP.~~
-
-~~The script now incorporates the SummaryStops.r script, with both designed to prepare the data for uploading to the database. As such, they generate unique stop and trip ids by combining the vehicle with a hex code of the start time of the trip or stop event.~~
-
-~~I have tried including the Storage of processed data:neo4j upload for each vehicle but the system times out, perhaps because of concurrent requests using the same connection object. Creating a new connection object and then closing it might work, at least for two conccurent session rather than 15. When I tried with a cluster of 2 it took ~5 hours and returned an error at the end complaining of a write conflict, although this only happened at the end when all data was uploaded. I have written a tryCatch function to write the error and vehicle to disc so I can investigate. Investigation of neo4j documentation suggests that by design the only real solution is retrying, but this is impractical with the LOAD_CSV function. I have written more on the neo4j page.~~
-
-~~I have tried to limit memory usage by having the script append vehicles to the Upload CSV as they were finished, however this is behaving eratically. Partially this was becuase the order of some frames was different so columns got mixed up, but even when they are explicitly sorted there are mismatches. The apparent cause is R has limited tools for file access management. As such I have written a separate file for each process (pid), and altered the cypher script in GraphUpload/ to map against these. It might be desirable to move this all into Python with such tools. After this approach the data is written to the database using RCypher.r.~~
-
-~~I am yet to decide which process is more optimal but it seems concurrent uploading, if pursued, should be as part of barefoot.~~
-
-~~Sometimes multiple gids will map to a single osm_id.~~
-
-
-~~The Docker container has also discarded most of the identifying information about roads, so matching to road names isn’t possible right away. For this the osm_id must be matched to the data from a OSM shapefile. In theory this is attainable by reading in the Geofabrik extract into QGIS and exporting as shapefile, but QGIS, inexplicably, cannot handle 64 bit ids and truncates them, meaning matching is not possible. Shapefiles must therefore be obtained by other means if mapping is desired. This is done using ogr2ogr on the command line.~~
-
-~~The length returned by Barefoot can be divided by the time between timestamps to provide an average imputed speed for the segments between matched points, although it filters out improbably fast ones (above 120 kph). This seems to be close to the measured speed where both are available for a segment. This is discussed more below.~~
-
-~~It also uses the specially created package tourextractor, which needs to be isntalled but is probably redundant given the capcaity to generate tours of arbitrary characteristics in queries.~~
-
-~~In future it might be possible to add a database access to Java and upload data from there, whilst finding a way to account for non matched points.~~
-
-~~Reruns~~
-~~The code now looks for matches onto recognised problematic segments (in probbo-ramps.txt) due to GPS error and records the observations whilst neglecting to process the vehicle further. Then after being fed through toJSON.r and barefoot again these can be processed again with the relevant arguments. ~~
-
-~~Arguments~~
-~~The script takes several arguments~~
-~~-r --rerun (logical default F)~~
-~~this indicates that rematching is being done and doesn't clear out the upload folder and processes only vehicles unfinished from last time.~~
-~~-s --stopsskip (logical default F)~~
-~~this skips summarystops.r, mainly for development~~
-~~-c --cypher (logical default F)~~
-~~this endeavours to upload to the database within the script~~
-~~-n -ncores (integer)~~
-~~changes the amount of cores being used (default number of availbale cores minus 1)~~
-
-
 

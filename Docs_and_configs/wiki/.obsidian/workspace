@@ -7,8 +7,11 @@
         "id": "74d97c82e427d9a6",
         "type": "leaf",
         "state": {
-          "type": "empty",
-          "state": {}
+          "type": "markdown",
+          "state": {
+            "file": "Raw_data_and_perparation/Storage_of_pre_processed_data.md",
+            "mode": "source"
+          }
         }
       }
     ],
@@ -73,6 +76,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "Raw_data_and_perparation/Storage_of_pre_processed_data.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -89,6 +93,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "Raw_data_and_perparation/Storage_of_pre_processed_data.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -110,7 +115,9 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {}
+              "state": {
+                "file": "Raw_data_and_perparation/Storage_of_pre_processed_data.md"
+              }
             }
           }
         ]
@@ -122,8 +129,15 @@
   },
   "active": "74d97c82e427d9a6",
   "lastOpenFiles": [
-    "process.sh.md",
-    "process.shclear_data.sh.md",
-    "Raw_data_and_perparation.md"
+    "Raw_data_and_perparation/Storage_of_pre_processed_data.md",
+    "Raw_data_and_perparation/Timezones.md",
+    "Processing/Tripgrouping.md",
+    "Processing/Redundant_methods.md",
+    "Processing/postbarefoot.md",
+    "Processing/SummaryStops.md",
+    "Processing/toJSON.md",
+    "Processing/Barefoot/Dockerfile.md",
+    "Processing/Barefoot/bfmap.py.md",
+    "Map data/editing.md"
   ]
 }
