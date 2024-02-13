@@ -34,15 +34,15 @@ func checkDatabaseDupe(obvs []obv, max_prune int64) (bool, int64) {
 		statement = " UNWIND " + "graph.names() AS g CALL {USE " + "graph.byName(g) " +
 			`
 		MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop)
-		RETURN max(s.end_time_utc) as max
+		RETURN max(s.end_time) as max
 	 ` +
 			"} RETURN max(max) as max"
 	} else {
 		statement = " UNWIND " + "graph.names() AS g CALL {USE " + "graph.byName(g) " +
 			`
 		MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop)
-		WHERE s.end_time_utc <= $MAX_PRUNE
-		RETURN max(s.end_time_utc) as max
+		WHERE s.end_time <= $MAX_PRUNE
+		RETURN max(s.end_time) as max
 	 ` +
 			"} RETURN max(max) as max"
 	}
