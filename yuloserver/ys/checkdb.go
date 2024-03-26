@@ -111,7 +111,7 @@ func checkPriorStop(id string, end_time int64) string {
 	defer session.Close()
 
 	statement := " UNWIND " + "graph.names() AS g CALL {USE " + "graph.byName(g) " +
-		"MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop{end_time_utc:$END_TIME}) RETURN s.id as id" +
+		"MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop{end_time:$END_TIME}) RETURN s.id as id" +
 		"} RETURN id as id"
 	//fmt.Println(statement)
 	parameters := map[string]interface{}{"ID": id, "END_TIME": end_time}
@@ -144,23 +144,23 @@ func checkMostRecentStop(id string, end_time int64) string {
 	defer session.Close()
 	/*statement := `
 	  MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop)
-	  WHERE s.end_time_utc < $END_TIME
-	  WITH max(s.end_time_utc) as max, a
-	  MATCH(a)-[:STOPPED_AT]->(ss:Stop{end_time_utc:max})
-	  RETURN ss.id as id, ss.end_time_utc as end_time
+	  WHERE s.end_time < $END_TIME
+	  WITH max(s.end_time) as max, a
+	  MATCH(a)-[:STOPPED_AT]->(ss:Stop{end_time:max})
+	  RETURN ss.id as id, ss.end_time as end_time
 	 `*/
 	statement :=
 		" UNWIND " + "graph.names() AS g CALL {USE " + "graph.byName(g) " +
 			`
                   MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop)
-                  WHERE s.end_time_utc < $END_TIME
-                  RETURN max(s.end_time_utc) as max_time
+                  WHERE s.end_time < $END_TIME
+                  RETURN max(s.end_time) as max_time
               }
               WITH g, max(max_time) as max_time_  CALL { USE ` +
 			"graph.byName(g) WITH max_time_" +
 			`
-                  MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(ss:Stop{end_time_utc:max_time_})
-                  RETURN ss.id as id, ss.end_time_utc as end_time
+                  MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(ss:Stop{end_time:max_time_})
+                  RETURN ss.id as id, ss.end_time as end_time
                  ` +
 			"} return id as id, end_time"
 
