@@ -28,7 +28,12 @@ func setupRoutes(params ys.Para) {
 	fmt.Println("Listening for vehicles on " + addr)
 
 	http.HandleFunc("/process", func(w http.ResponseWriter, r *http.Request) {
-
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, max_prune, stop_distance, stop_duration, gen_resids_only, prune_dupes, drop_first_stop, speed_missing, azimuth_missing, raw_output")
+		if r.Method == http.MethodOptions {
+			return
+		}
 		ys.ProcessFile(w, r)
 
 	})
