@@ -69,24 +69,17 @@ type trip_bf_out struct {
 func bffeed(trip trip) (trip_bf_out, error) {
 	//fmt.Println(trip.tripid)
 	addr := Params.Host + ":" + Params.Port
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		fmt.Println("Barefoot connection error")
-		return trip_bf_out{}, err
-
-	}
-	defer conn.Close()
 
 	cmds := to_json(trip)
 
 	var matched_trip []Json_out
-	r := bufio.NewReader(conn)
 
 	for _, cmd := range cmds {
-		//matched_subtrip = nil
-		body, err := io_func(r, conn, cmd)
+
+		body, err := io_func(addr, cmd)
 		if err != nil {
 			fmt.Println(err)
+			return trip_bf_out{}, err
 		}
 
 		var obvs []Json_out
@@ -108,19 +101,32 @@ func bffeed(trip trip) (trip_bf_out, error) {
 }
 
 /*
-io_func is invoked for a strange error on a small subset of the json (cmd below) that return empty responses from the
+io_func contains provisions for a strange error on a small subset of the json (cmd below) that return empty responses from the
 Barefoot server. It is always the same JSON. The same JSON works when submitted via the command line.
 This may be an encoding isue but in the mean time the error handling will write the JSON to disk and
 submit it via the system call.
+2023-03-27 This should be fixed now I have moved the connection and closure thereof into the io_func itself.
 */
-func io_func(r *bufio.Reader, conn net.Conn, cmd string) (string, error) {
+func io_func(addr string, cmd string) (string, error) {
+	//t := time.Now()
+	conn, err := net.Dial("tcp", addr)
+	defer conn.Close()
+	if err != nil {
+		fmt.Println("Barefoot connection error")
+		return "", err
+
+	}
+	r := bufio.NewReader(conn)
+
 	fmt.Fprintf(conn, cmd+"\n")
+
 	header, err := r.ReadString('\n')
+	//this whole error block is deprecated
 	if err != nil {
 		//fmt.Printf("\n\n\nNew error at %s\n", time.Now().String())
-		//fmt.Println(header)
-		//fmt.Println(err)
-		//fmt.Println(cmd)
+
+		fmt.Println(err)
+
 		fn := fmt.Sprintf("%d-temp.json", time.Now().UnixNano())
 		file, fileerr := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 
