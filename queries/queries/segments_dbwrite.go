@@ -17,7 +17,7 @@ import (
 func bd_query_builder(Bd_type string, direction bool) string {
 
 	statement := `
-                 MATCH (s:Segment{osm_id: $OSM_ID})<-[oa:ON]-(o:Observation)<-[:OBSERVED_AT]-(t:Trip)<-[:EMBARKED_ON]-(v:Asset)
+                  MATCH (s:Segment{osm_id: $OSM_ID})<-[oa:ON]-(o:Observation)<-[:OBSERVED_AT]-(t:Trip)<-[:EMBARKED_ON]-(v:Asset)
 	              WHERE o.datetime > $START AND o.datetime < $FINISH AND o.datetimedt IS NOT NULL 
 	              AND oa.type IN ['matched path', 'matched no path']
 	              WITH s, o, t, v, oa, collect(distinct(o)) as oo
@@ -29,6 +29,7 @@ func bd_query_builder(Bd_type string, direction bool) string {
                   count(distinct(v)) as n_vehicles
                  `
 	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g) "
+	non_fabric_prefix := "CALL {USE " + Year_db
 	fabric_suffix := `} RETURN osm_id,
 							   percentileCont(imputed_speed, 0.25) as LQ_imp,
 							   percentileCont(imputed_speed, 0.50) as Median_imp,
@@ -64,9 +65,11 @@ func bd_query_builder(Bd_type string, direction bool) string {
 		statement = statement + fmt.Sprintf(" ORDER BY %[1]s", Bd_type)
 	}
 	//fmt.Println("starting new session")
-
-	statement = fabric_prefix + statement + fabric_suffix
-
+	if Use_fabric {
+		statement = fabric_prefix + statement + fabric_suffix
+	} else {
+		statement = non_fabric_prefix + statement + fabric_suffix
+	}
 	return statement
 }
 
@@ -129,6 +132,7 @@ func Seg_speedquery_full(osm_id string) []string {
                   count(distinct(v)) as n_vehicles
                  `
 	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g) "
+	non_fabric_prefix := "CALL {USE " + Year_db
 	fabric_suffix := `
 						} RETURN osm_id,
 						percentileCont(imputed_speed, 0.25) as LQ_imp,
@@ -138,7 +142,11 @@ func Seg_speedquery_full(osm_id string) []string {
 						sum(n_obvs) as n_obvs,
 						sum(n_trips) as n_trips,
 						sum(n_vehicles) as n_vehicles`
-	statement = fabric_prefix + statement + fabric_suffix
+	if Use_fabric {
+		statement = fabric_prefix + statement + fabric_suffix
+	} else {
+		statement = non_fabric_prefix + statement + fabric_suffix
+	}
 	session := Db.NewSession(Sesh_config)
 
 	defer session.Close()

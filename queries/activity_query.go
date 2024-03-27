@@ -20,6 +20,7 @@ func main() {
 	mindur := flag.Int64("mindur", 1800, "minimum duration of stops for activity query")
 	month := flag.Int64("month", 0, "month to query, if 0 whole year will be queried")
 	n_routines := flag.Int64("n_routines", 15, "number of routines to query")
+	use_fabric := flag.Bool("fabric", false, "whether to query fabric")
 
 	flag.Parse()
 
@@ -33,6 +34,8 @@ func main() {
 
 	queries.Fabric = creds.Fabric
 	queries.Seg_db = creds.Segs_db
+	queries.Year_db = creds.Db_name
+	queries.Use_fabric = *use_fabric
 
 	//add creds start db
 	fmt.Println("Connecting to database")
@@ -47,10 +50,17 @@ func main() {
 	)
 	defer db.Close()
 	//naming database in neo4j4
-	sesh_config := neo4j.SessionConfig{
-		DatabaseName: creds.Fabric,
+	if *use_fabric {
+		sesh_config := neo4j.SessionConfig{
+			DatabaseName: creds.Fabric,
+		}
+		queries.Sesh_config = sesh_config
+	} else {
+		sesh_config := neo4j.SessionConfig{
+			DatabaseName: creds.Db_name,
+		}
+		queries.Sesh_config = sesh_config
 	}
-	queries.Sesh_config = sesh_config
 
 	if err != nil {
 		fmt.Printf("Error %v", err)

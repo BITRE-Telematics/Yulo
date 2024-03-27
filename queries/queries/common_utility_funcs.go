@@ -11,6 +11,7 @@ import (
 
 var Fabric string
 var Seg_db string
+var Year_db string
 var Activityfile string
 var Year int64
 var MinDur int64
@@ -21,6 +22,7 @@ var Db neo4j.Driver
 var Sesh_config neo4j.SessionConfig
 var Sesh_config_segs neo4j.SessionConfig
 var Max_routines int64
+var Use_fabric bool
 
 type Cred_struct struct {
 	Username     string `yaml:"username"`

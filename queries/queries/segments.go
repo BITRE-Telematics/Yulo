@@ -112,6 +112,7 @@ func Seg_speedquery(osm_id string, i int, direction bool) neo4j.Result {
                   count(distinct(v)) as n_vehicles
                  `
 	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g) "
+	non_fabric_prefix := "CALL {USE " + Year_db
 	fabric_suffix := "} RETURN osm_id, LQ_imp, Median_imp, UQ_imp, stDev_imp, n_obvs, n_trips, n_vehicles"
 	if Bd_type != "" {
 		statement = statement + fmt.Sprintf(`, o.datetimedt.%[1]s as %[1]s`, Bd_type)
@@ -143,7 +144,11 @@ func Seg_speedquery(osm_id string, i int, direction bool) neo4j.Result {
 	session := Db.NewSession(Sesh_config)
 
 	defer session.Close()
-	statement = fabric_prefix + statement + fabric_suffix
+	if Use_fabric {
+		statement = fabric_prefix + statement + fabric_suffix
+	} else {
+		statement = non_fabric_prefix + statement + fabric_suffix
+	}
 
 	parameters := map[string]interface{}{"OSM_ID": osm_id, "START": Start, "FINISH": Finish}
 

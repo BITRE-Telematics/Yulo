@@ -85,7 +85,7 @@ func batch_query_usage(batch_id string, c chan []string, onExit func(), ind int)
 func Act_length_query(id string, i int) []*neo4j.Record {
 	//res := ActLength{}
 
-	statement := `MATCH(v:Asset{id:$VEH})-[:EMBARKED_ON]->(Trip)-[:OBSERVED_AT]->(o:Observation)-[on:ON]->(s:Segment)
+	statement := ` MATCH(v:Asset{id:$VEH})-[:EMBARKED_ON]->(Trip)-[:OBSERVED_AT]->(o:Observation)-[on:ON]->(s:Segment)
        			  WHERE (on.type <> 'imputed' or on.type <> 'source' OR on.type IS NULL) AND o.datetimedt.year = $YEAR %s 
       			  with v, o, s, collect(distinct o) as oo
       			  RETURN
@@ -96,6 +96,7 @@ func Act_length_query(id string, i int) []*neo4j.Record {
       			   s.osm_id as osm_id
                  `
 	fabric_prefix := "UNWIND graph.names() AS g CALL {USE " + "graph.byName(g) "
+	non_fabric_prefix := "CALL {USE " + Year_db
 	fabric_suffix := `} 
 						WITH sum_length, month, day, osm_id, vehicle
 						UNWIND osm_id as id 
@@ -119,8 +120,11 @@ func Act_length_query(id string, i int) []*neo4j.Record {
 
 	}
 	session := Db.NewSession(Sesh_config)
-
-	statement = fabric_prefix + statement + fabric_suffix
+	if Use_fabric {
+		statement = fabric_prefix + statement + fabric_suffix
+	} else {
+		statement = non_fabric_prefix + statement + fabric_suffix
+	}
 	//fmt.Println(statement)
 	defer session.Close()
 	result, err := session.Run(statement, parameters)
@@ -158,7 +162,9 @@ func Act_usage_query(id string, i int) []*neo4j.Record {
 	//fmt.Println(id)
 	//fmt.Println(Year)
 	//fmt.Println(MinDur)
-	statement = fabric_prefix + statement + fabric_suffix
+	if Use_fabric {
+		statement = fabric_prefix + statement + fabric_suffix
+	}
 	//fmt.Println(statement)
 	parameters := map[string]interface{}{
 		"VEH":    id,
@@ -204,7 +210,9 @@ func Act_write(filename string, resume bool) {
 	fabric_prefix := "USE fabric UNWIND graph.names() AS g CALL {USE graph.byName(g) "
 	fabric_suffix := "} RETURN distinct(id)"
 	id_q := "MATCH(v:Asset) RETURN v.id as id"
-	id_q = fabric_prefix + id_q + fabric_suffix
+	if Use_fabric {
+		id_q = fabric_prefix + id_q + fabric_suffix
+	}
 	fmt.Println(id_q)
 	idquery, err := session.Run(id_q, map[string]interface{}{})
 

@@ -19,6 +19,7 @@ func main() {
 	bd_type := flag.String("bd_type", "hour", "time by which to break down (one of hour, month, dayOfWeek")
 	direction := flag.Bool("direction", false, "whether to break down by direction")
 	byfirm := flag.Bool("byfirm", false, "whether to cross tab by firm")
+	use_fabric := flag.Bool("fabric", false, "whether to query fabric")
 	update_db := flag.Bool("update_db", true, "whether to upload precomputes directly - automatically does week and hour bd and direction")
 	flag.Parse()
 	if *resume {
@@ -28,10 +29,12 @@ func main() {
 	creds := queries.Read_creds(*creds_file)
 	//fmt.Println(creds)
 	queries.Fabric = creds.Fabric
+	queries.Year_db = creds.Db_name
 	queries.Seg_db = creds.Segs_db
+	queries.Use_fabric = *use_fabric
 	fmt.Println("Fabric db : ", creds.Fabric)
 	fmt.Println("Segs db : ", creds.Segs_db)
-
+	fmt.Println("Year db : ", creds.Db_name)
 	//add creds start db
 	fmt.Println("Connecting to database")
 
@@ -45,10 +48,18 @@ func main() {
 	)
 	defer db.Close()
 	//naming database in neo4j4
-	sesh_config := neo4j.SessionConfig{
-		DatabaseName: creds.Fabric,
+
+	if *use_fabric {
+		sesh_config := neo4j.SessionConfig{
+			DatabaseName: creds.Fabric,
+		}
+		queries.Sesh_config = sesh_config
+	} else {
+		sesh_config := neo4j.SessionConfig{
+			DatabaseName: creds.Db_name,
+		}
+		queries.Sesh_config = sesh_config
 	}
-	queries.Sesh_config = sesh_config
 
 	sesh_config_segs := neo4j.SessionConfig{
 		DatabaseName: creds.Segs_db,
