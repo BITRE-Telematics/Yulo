@@ -114,6 +114,7 @@ func checkPriorStop(id string, end_time int64) string {
 		"MATCH(a:Asset{id: $ID})-[:STOPPED_AT]->(s:Stop{end_time:$END_TIME}) RETURN s.id as id" +
 		"} RETURN id as id"
 	//fmt.Println(statement)
+	//fmt.Println(end_time)
 	parameters := map[string]interface{}{"ID": id, "END_TIME": end_time}
 	ps_res, err := session.Run(statement, parameters)
 	if err != nil {
@@ -122,6 +123,7 @@ func checkPriorStop(id string, end_time int64) string {
 	if ps_res != nil {
 		if ps_res.Err() != nil {
 			fmt.Println(ps_res.Err())
+			//one could return "" here to avoid the database entirely but I'll retain panic for now
 		}
 	}
 	if ps_res.Next() {
@@ -169,6 +171,7 @@ func checkMostRecentStop(id string, end_time int64) string {
 	//fmt.Println(statement)
 	if err != nil {
 		fmt.Print("Check database error")
+		//one could return "" here to avoid the database entirely but I'll retain panic for now
 	}
 
 	if ps_res != nil {
