@@ -10,7 +10,7 @@ RUN apt-get update && \
 apt-get install -y libgeos-dev && \
 apt-get install -y netcat
 WORKDIR /yuloserver
-RUN go mod init github.com/bitre-telematics/yulo
+RUN go mod init yuloserver
 RUN go mod tidy
 RUN go mod download
 
