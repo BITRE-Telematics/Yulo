@@ -110,12 +110,13 @@ submit it via the system call.
 func io_func(addr string, cmd string) (string, error) {
 	//t := time.Now()
 	conn, err := net.Dial("tcp", addr)
-	defer conn.Close()
+	
 	if err != nil {
 		fmt.Println("Barefoot connection error")
 		return "", err
 
 	}
+	defer conn.Close()
 	r := bufio.NewReader(conn)
 
 	fmt.Fprintf(conn, cmd+"\n")
