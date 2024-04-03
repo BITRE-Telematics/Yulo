@@ -14,7 +14,7 @@ Collectively these changes are made to create a debug mode that returns
 - the osm_id of segments traversed to that segment
 - the length of the traversed route between observations
 - the imputed speed experienced on the route between observations
-- the ASGS classification of the road
+- the ASGS classification of the road (requires running of ../add_segments/addSegments.py to populate map/tools/seg_sa2s.json
 - the azimuth of the vehicle on the matched segment and the media azimuth for imputed segments
 
 The changes also include car ferries and eliminate closed and private roads
