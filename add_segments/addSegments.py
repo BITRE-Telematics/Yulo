@@ -93,42 +93,40 @@ def format_tags(row, seg_upload):
 #         item.split("\"=>\"") for item in row[1][1:-1].split("\", \"")))
 
 
-def writer(row, creds, args):
-  #print(row)
-  seg_upload = "MERGE(segment:Segment{\
-                  osm_id: $osm_id\
-                  })\
-                 SET segment.name = $name, segment.highway = $highway, segment.speed_limit = toInteger($speed_lim), segment.wkt = segment.geometry, \
-                 segment.data_date = timestamp()/1000"
 
+
+
+def writer_batch(rows, creds, args):
   
-  if args.other_tags == 'True':
-    row, seg_upload = format_tags(row, seg_upload)
-
-  if args.geocode == 'True' : 
-    seg_upload = seg_upload + ', segment.gcc = $GCC, segment.sa2 = toString($SA2)'
+  seg_upload = "UNWIND $ROWS as r\
+                 MERGE(segment:Segment{\
+                  osm_id: r.osm_id\
+                  })\
+                 SET segment.name = r.name, segment.highway = r.highway, segment.speed_limit = toInteger(r.speed_lim), segment.wkt = segment.geometry, \
+                 segment.data_date = timestamp()/1000"
+  # if args.other_tags == 'True':
+  #   rows, seg_upload = format_tags_batch(rows, seg_upload)
+  if args.geocode == 'True': 
+    seg_upload = seg_upload + ', segment.gcc = r.GCC, segment.sa2 = toString(r.SA2)'
   if args.length == 'True' : 
-    seg_upload = seg_upload + ', segment.length = toFloat($length)'             
+    seg_upload = seg_upload + ', segment.length = toFloat(r.length)'   
+     
+  def seg_batch(tx, batch):
+    tx.run(seg_upload, batch)
+  
   db = 'bolt://%s' % creds['ipport']
   g = neo4j.GraphDatabase.driver(db, auth = (creds['username'], creds['password']))
   with g.session(database = creds['segs_db']) as session:
     try :
-      session.run(seg_upload, row)
+      session.write_transaction(seg_batch, rows)
     except (ClientError, SecurityError, CypherSyntaxError) as e :
-      print("Error uploading segment : %s" %row['osm_id'])
+      print("Error uploading batch " )
       print(e)
       #print(seg_upload)
       #print(row)
       print('\n')
 
-# ##The weird slicing is to reverse the tuple because geopy likes lat lons. Once can also use geopy.distance.lonlat
-# def calc_length_imp(road):
-#   xy_string = road.coords
-#   dist = 0
-#   for i in range(1, len(xy_string)):
-#     dist = dist + distance(xy_string[i-1][::-1], xy_string[i][::-1]).meters
-#   return(dist)
-  
+
 ##The below is quite slow so maybe try geog.distance np.sum(geog.distance(line[:-1, :], line[1:, :]))
  
 @numba.jit
@@ -161,14 +159,14 @@ if __name__ == '__main__':
                         help="file with segment data")
   parser.add_argument("-g", "--geocode", type = str, default = 'True',
                         help="geocode segments")
-  parser.add_argument("-o", "--other_tags", type = str, default = 'True',
+  parser.add_argument("-o", "--other_tags", type = str, default = 'False',
                         help="add other tags")
   parser.add_argument("-l", "--length", type = str, default = 'False',
                         help="compute segment length")
   parser.add_argument("-j", "--json", type = str, default = '/barefoot/map/tools/seg_sa2s.json',
                         help="location of json output for segment geooding to SA2")
-  parser.add_argument("-nc", "--n_cores", type = int, default = 15,
-                        help="No of cores for upload")
+  parser.add_argument("-bs", "--batch_size", type = int, default = 10000,
+                        help="No of roads per batch")
   args = parser.parse_args()
 
 
@@ -176,59 +174,70 @@ if __name__ == '__main__':
   with open(args.creds, 'r') as credsfile:
     creds = yaml.safe_load(credsfile)
   
-
+  writer_batch1 = partial(writer_batch, creds = creds, args = args)
   
-  print("Reading in file")
-  roads = gpd.read_file(args.file)
-  print('Processing %s roads' % len(roads.index))
-  
-  if args.length == 'True':
-  #  with Pool() as p:
-    print('Calculating lengths')
-  #    roads['length'] = roads.geometry.apply(lambda x: calc_length(x))
-    roads.geometry = roads.geometry.to_crs(3112)
-    roads['length'] = roads.geometry.length
-    roads.geometry = roads.geometry.to_crs(4326)
   
   if args.geocode == "True":
-    print('Geocoding')
-    SA2 = gpd.read_file('/shapefiles/SA2_2021_AUST.geojson')
+      print('Geocoding')
+      SA2 = gpd.read_file('/shapefiles/SA2_2021_AUST.geojson')
 
-    SA2 = SA2[[g is not None for g in SA2.geometry]]
-    ##parallelise this
+      SA2 = SA2[[g is not None for g in SA2.geometry]]
+  running_tot=0
+  batch_len = args.batch_size
+  while batch_len == args.batch_size:
+    roads = gpd.read_file(args.file, rows = slice(running_tot,  running_tot + args.batch_size))
+    print('Processing %s roads' % len(roads.index))
+    
+    if args.length == 'True':
+    #  with Pool() as p:
+      print('Calculating lengths')
+    #    roads['length'] = roads.geometry.apply(lambda x: calc_length(x))
+      roads.geometry = roads.geometry.to_crs(3112)
+      roads['length'] = roads.geometry.length
+      roads.geometry = roads.geometry.to_crs(4326)
+    
+    if args.geocode == "True":
+      print('Geocoding')
+     
+      roads = geocode_segs(roads, SA2)
 
-    roads = geocode_segs(roads, SA2)
+      sa2_dict = dict(zip(roads.osm_id, zip(roads.SA2, roads.GCC)))
+      with open(args.json, 'w') as f:
+        json.dump(sa2_dict, f)
 
-    sa2_dict = dict(zip(roads.osm_id, zip(roads.SA2, roads.GCC)))
-    with open(args.json, 'w') as f:
-      json.dump(sa2_dict, f)
+    else:
+      roads = pd.DataFrame(roads)
+      roads.geometry = roads.geometry.apply(lambda x: str(x))
+    
+    print('Processing tags')
+    roads.other_tags = roads.other_tags.fillna("")
+    roads.highway = roads.apply(lambda x: 'ferry' if 'ferry' in x.other_tags else x.highway, axis = 1)
+    roads['speed_lim'] = roads.maxspeed
+    
 
-  else:
-    roads = pd.DataFrame(roads)
-    roads.geometry = roads.geometry.apply(lambda x: str(x))
+
+    roads = roads.iterrows()
+    roads = [dict(r[1]) for r in roads] ##I could put this in the writer function to speed it up
+    # roads = roads.to_dict('records')
+    db = 'bolt://%s' % creds['ipport']
+    g = neo4j.GraphDatabase.driver(db, auth = (creds['username'], creds['password']))
+
+    
+    print('writing roads')
+
+    
+    
+    roads = {'ROWS' : roads} 
+    batch_len = len(roads['ROWS'])
+    
+   
+    
+    writer_batch1(roads)
+    
+    running_tot= running_tot + batch_len
+    print(f'Uploaded {running_tot} segments')
   
-  print('Processing tags')
-  roads.other_tags = roads.other_tags.fillna("")
-  roads.highway = roads.apply(lambda x: 'ferry' if 'ferry' in x.other_tags else x.highway, axis = 1)
-  roads['speed_lim'] = roads.maxspeed
-  
-
-
-  roads = roads.iterrows()
-  roads = [dict(r[1]) for r in roads] ##I could put this in the writer function to speed it up
-
-  db = 'bolt://%s' % creds['ipport']
-  g = neo4j.GraphDatabase.driver(db, auth = (creds['username'], creds['password']))
-
-
-  print('writing roads')
-  writer1 = partial(writer, creds = creds, args = args)
-  with Pool(args.n_cores) as p:
-    p.map(writer1, roads)
-
-
-
-  
+  print('Finished writing, making geojson')
   with g.session(database = creds['segs_db']) as session:
     roads_db = session.read_transaction(seg_sa2_pull)
 
@@ -240,5 +249,4 @@ if __name__ == '__main__':
 
   
     
-
 
