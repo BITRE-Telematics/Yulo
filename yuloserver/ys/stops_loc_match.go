@@ -243,16 +243,12 @@ func read_cache_pq(loc_type string) []loc {
 		return locs
 	}
 	defer pr.ReadStop()
+	num := int(pr.GetNumRows())
+	pq_locs := make([]Pq_loc, num)
 
-	var pq_locs []Pq_loc
-
-	for i := 0; i < int(pr.GetNumRows()); i++ {
-		var loc Pq_loc
-		if err = pr.Read(&loc); err != nil {
-			fmt.Println("Read cache error")
-			return locs
-		}
-		pq_locs = append(pq_locs, loc)
+	if err = pr.Read(&pq_locs); err != nil {
+		fmt.Println(err)
+		return locs
 	}
 	for _, l := range pq_locs {
 		locs = append(locs, loc{id: l.Id, lon: l.Lon, lat: l.Lat})
