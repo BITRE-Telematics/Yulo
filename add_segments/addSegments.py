@@ -37,7 +37,7 @@ def geocode_segs(shp, SA2):
   return shp
 
 def fix_geocode(df, SA2):
-  df_notmatched = df[df.SA2== '0']
+  df_notmatched = df[df.SA2== '0'].copy()
   points = [x.centroid for x in df_notmatched.geometry]
   nearest_poly1 = partial(nearest_poly, SA2 = SA2)
   with Pool() as p:
@@ -59,40 +59,41 @@ def nearest_poly(point, SA2):
   return ind
   
 
-def format_tags(row, seg_upload):
-  tags_dict = {}
-  a = row['other_tags'][1:-1].split('","')
-  b = [x.replace('"=>"', '=') for x in a]
-  c = [x for x in b if \
-       'maxspeed' not in x and \
-       '=' in x
-   ]
 
-  d = [sub('[:\\.`@]', '', x) for x in c]
-  e = [sub('-', '_', x) for x in d]
-  f = [sub(r'\\', "'", x) for x in e]
-  for t in f:
-    tag, value = t.split('=')[0], t.split('=')[1]
-    tag = sub( ' ', '_', tag)
-    tag = sub('^(\\d)', 'is\\1', tag)
-    tags_dict[tag] = value
-    ##iterate to add booleans to tag2
-    func = ['toBoolean(', ')'] if value in ['yes', 'no'] else ['', '']
-    func = ['toInteger(', ')'] if tag == 'lanes' else ['', '']
-    ##this is yucky because the % formatting won't work when there's curly brackets which doesn't use but
-    ##will accpet it in the str.format() method where they are used ::shrug::
-    #seg_upload = seg_upload + ', segment.{}={}{{{}}}{}'.format(tag, func[0], tag, func[1])
-    #neo4j 4.0 style
-    seg_upload = seg_upload + ', segment.%s=%s $%s %s' % (tag, func[0], tag, func[1])
-  ##dict.update() changes the object in place
-  row.update(tags_dict)
-  return row, seg_upload
+def format_tags_dict(rows):
+  for row in rows:
+    tags_dict = {}
+    a = row['other_tags'][1:-1].split('","')
+    b = [x.replace('"=>"', '=') for x in a]
+    c = [x for x in b if \
+         'maxspeed' not in x and \
+         '=' in x
+     ]
 
-'''Barefoot import splits tags like this, left here for reference, where row[1] is other_tags'''
-# tags = dict((k.strip(), v.strip()) for k, v in (
-#         item.split("\"=>\"") for item in row[1][1:-1].split("\", \"")))
-
-
+    d = [sub('[:\\.`@]', '', x) for x in c]
+    e = [sub('-', '_', x) for x in d]
+    f = [sub(r'\\', "'", x) for x in e]
+    for t in f:
+      tag, value = t.split('=')[0], t.split('=')[1]
+      tag = sub( ' ', '_', tag)
+      tag = sub('^(\\d)', 'is\\1', tag)
+      
+      if value =='yes':
+        value = True 
+      elif value =='no':
+        value = False
+      elif (value.count(".") == 1 and value.replace(".", "").isdigit()):
+        value = float(value) 
+      elif value.isdigit():
+        value = int(value) 
+      
+      tags_dict[tag] = value
+    
+    row["OTHER_TAGS"] = tags_dict
+    _ = row.pop('other_tags')
+      
+  
+  return rows
 
 
 
@@ -103,14 +104,29 @@ def writer_batch(rows, creds, args):
                   osm_id: r.osm_id\
                   })\
                  SET segment.name = r.name, segment.highway = r.highway, segment.speed_limit = toInteger(r.speed_lim), segment.wkt = segment.geometry, \
-                 segment.data_date = timestamp()/1000"
-  # if args.other_tags == 'True':
-  #   rows, seg_upload = format_tags_batch(rows, seg_upload)
-  if args.geocode == 'True': 
-    seg_upload = seg_upload + ', segment.gcc = r.GCC, segment.sa2 = toString(r.SA2)'
+                 segment.data_date = timestamp()/1000\
+                 "
+  
+  
   if args.length == 'True' : 
     seg_upload = seg_upload + ', segment.length = toFloat(r.length)'   
-     
+  if args.geocode == 'True': 
+    seg_upload = seg_upload + ', segment.gcc = r.GCC, segment.sa2 = toString(r.SA2)\
+    WITH segment, r \
+    OPTIONAL MATCH(segment)-[in:IN]->(sa:SA2) DELETE in \
+    MERGE(matched_sa2:SA2{sa2_code: toString(r.SA2)})\
+    CREATE (segment)-[:IN]->(matched_sa2) \
+         '
+
+  if args.other_tags == 'True':
+    print('adding other tags')
+    rows['ROWS'] = format_tags_dict(rows['ROWS']) 
+    seg_upload = seg_upload +  " WITH segment, r UNWIND keys(r.OTHER_TAGS) AS k WITH segment, r, k, properties(r.OTHER_TAGS) as props \
+      MERGE(t:Tag{tag_id:k})\
+      MERGE(t)<-[ht:HAS_TAG]-(segment)\
+      SET ht.value = props[k]\
+      "
+  
   def seg_batch(tx, batch):
     tx.run(seg_upload, batch)
   
@@ -122,7 +138,7 @@ def writer_batch(rows, creds, args):
     except (ClientError, SecurityError, CypherSyntaxError) as e :
       print("Error uploading batch " )
       print(e)
-      #print(seg_upload)
+      
       #print(row)
       print('\n')
 
@@ -159,7 +175,7 @@ if __name__ == '__main__':
                         help="file with segment data")
   parser.add_argument("-g", "--geocode", type = str, default = 'True',
                         help="geocode segments")
-  parser.add_argument("-o", "--other_tags", type = str, default = 'False',
+  parser.add_argument("-o", "--other_tags", type = str, default = 'True',
                         help="add other tags")
   parser.add_argument("-l", "--length", type = str, default = 'False',
                         help="compute segment length")
@@ -178,12 +194,17 @@ if __name__ == '__main__':
   
   
   if args.geocode == "True":
-      print('Geocoding')
+      print('Geocoding in this session')
       SA2 = gpd.read_file('/shapefiles/SA2_2021_AUST.geojson')
 
       SA2 = SA2[[g is not None for g in SA2.geometry]]
+  else:
+    print("Not geocoding in this session")
   running_tot=0
   batch_len = args.batch_size
+  
+
+
   while batch_len == args.batch_size:
     roads = gpd.read_file(args.file, rows = slice(running_tot,  running_tot + args.batch_size))
     print('Processing %s roads' % len(roads.index))
@@ -249,4 +270,3 @@ if __name__ == '__main__':
 
   
     
-
